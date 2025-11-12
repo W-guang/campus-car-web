@@ -1,0 +1,41 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+header { text-align: center; padding: 20px; background: #007bff; color: white; border-radius: 10px; margin-bottom: 20px; }
+nav a { color: white; margin: 0 10px; text-decoration: none; }
+nav a:hover { text-decoration: underline; }
+
+.form-container {
+  max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+input, select, button {
+  width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px;
+}
+button { background: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; }
+button:hover { background: #0056b3; }
+
+.vehicle-card {
+  background: white; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+#map-container {
+  height: 500px;
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin: 20px 0;
+  background: #f0f0f0;
+}
+
+.filter {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filter label { margin-right: 15px; }
+.filter input[type="number"] { width: 70px; padding: 6px; }

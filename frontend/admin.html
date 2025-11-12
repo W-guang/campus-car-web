@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>管理员审核</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="container">
+    <h2>待审核内容</h2>
+    <div id="pending"></div>
+  </div>
+
+  <script>
+    fetch('/api/admin/pending')
+      .then(r => r.json())
+      .then(data => {
+        const html = `
+          <h3>用户 (${data.users.length})</h3>
+          ${data.users.map(u => `<p>${u.student_id} - ${u.name} <button onclick="approve('user', ${u.user_id})">通过</button></p>`).join('')}
+          <h3>车辆 (${data.vehicles.length})</h3>
+          ${data.vehicles.map(v => `<p>${v.type} - ${v.location_desc} <button onclick="approve('vehicle', ${v.vehicle_id})">通过</button></p>`).join('')}
+          <h3>代拿 (${data.posts.length})</h3>
+          ${data.posts.map(p => `<p>${p.title} <button onclick="approve('post', ${p.post_id})">通过</button></p>`).join('')}
+        `;
+        document.getElementById('pending').innerHTML = html || '<p>暂无待审核</p>';
+      });
+
+    function approve(type, id) {
+      alert(`已通过 ${type} ID: ${id}`);
+      // TODO: 调用后端审核接口
+    }
+  </script>
+</body>
+</html>

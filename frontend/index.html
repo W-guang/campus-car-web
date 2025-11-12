@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>校园车联 · 首页</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+
+
+<body>
+  <div class="container">
+<header>
+  <h1>校园车联</h1>
+  <nav>
+    <a href="login.html">登录</a> |
+    <a href="register.html">注册</a> |
+    <a href="post.html">发布代拿</a> |
+    <a href="admin.html">管理员</a> |
+    <button onclick="startRent()" style="background:#28a745;color:white;padding:8px 16px;border:none;border-radius:6px;cursor:pointer;">
+      出租车辆
+    </button>
+  </nav>
+</header>
+
+    <!-- 地图区域 -->
+    <section class="map">
+      <h2>校园地图（高德）</h2>
+      <div id="map-container" style="height: 500px; width: 100%;"></div>
+    </section>
+
+    <!-- 车辆列表 -->
+<section class="filter">
+  <h2>筛选车辆</h2>
+  <label>
+    <input type="checkbox" id="filter-ebike" checked> 电动车
+  </label>
+  <label>
+    <input type="checkbox" id="filter-bicycle" checked> 自行车
+  </label>
+  <label>
+    价格：¥<input type="number" id="min-price" value="0" min="0" step="0.5"> 
+    - ¥<input type="number" id="max-price" value="10" min="0" step="0.5">
+  </label>
+  <button onclick="applyFilter()">筛选</button>
+</section>
+
+<section class="vehicles">
+  <h2>可租车辆</h2>
+  <div id="vehicle-list">加载中...</div>
+</section>
+  </div>
+
+  <!-- 高德地图脚本（放在 body 末尾）-->
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=a49a852abb90dd6856b2d10227220702&plugin=AMap.Geocoder,AMap.MarkerCluster"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const map = new AMap.Map('map-container', {
+      zoom: 16,
+      center: [112.58451, 37.79676],
+      resizeEnable: true
+    });
+
+    const geocoder = new AMap.Geocoder();
+    let allVehicles = [];
+    let markers = [];
+    let rentMarker = null;
+
+    // 加载所有车辆
+    function loadVehicles() {
+      fetch('/api/vehicles')
+        .then(r => r.json())
+        .then(vehicles => {
+          allVehicles = vehicles;
+          renderVehicles(vehicles);
+          updateMapMarkers(vehicles);
+        });
+    }
+
+    // 渲染列表
+    function renderVehicles(vehicles) {
+      document.getElementById('vehicle-list').innerHTML = vehicles.map(v => `
+        <div class="vehicle-card">
+          <h3>${v.type === 'ebike' ? '电动车' : '自行车'}</h3>
+          <p>位置：${v.location_desc}</p>
+          <p>价格：¥${v.price_per_hour}/小时</p>
+          <p>车主：${v.owner_name}</p>
+        </div>
+      `).join('') || '<p>暂无车辆</p>';
+    }
+
+    // 更新地图标记
+    function updateMapMarkers(vehicles) {
+      markers.forEach(m => m.setMap(null));
+      markers = [];
+
+      vehicles.forEach(v => {
+        const marker = new AMap.Marker({
+          position: [112.58451 + (Math.random() - 0.5) * 0.01, 37.79676 + (Math.random() - 0.5) * 0.01],
+          title: v.location_desc,
+          icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png',
+          label: { content: `¥${v.price_per_hour}`, direction: 'top' }
+        });
+
+        marker.on('click', () => {
+          new AMap.InfoWindow({
+            content: `<div style="padding:10px;"><h4>${v.type === 'ebike' ? '电动车' : '自行车'}</h4><p>¥${v.price_per_hour}/小时</p></div>`,
+            offset: new AMap.Pixel(0, -30)
+          }).open(map, marker.getPosition());
+        });
+
+        marker.setMap(map);
+        markers.push(marker);
+      });
+    }
+
+    // 筛选
+    window.applyFilter = function() {
+      const ebike = document.getElementById('filter-ebike').checked;
+      const bicycle = document.getElementById('filter-bicycle').checked;
+      const min = parseFloat(document.getElementById('min-price').value) || 0;
+      const max = parseFloat(document.getElementById('max-price').value) || Infinity;
+
+      const filtered = allVehicles.filter(v => {
+        const typeMatch = (ebike && v.type === 'ebike') || (bicycle && v.type === 'bicycle');
+        const priceMatch = v.price_per_hour >= min && v.price_per_hour <= max;
+        return typeMatch && priceMatch;
+      });
+
+      renderVehicles(filtered);
+      updateMapMarkers(filtered);
+    };
+
+    // 出租模式
+    window.startRent = function() {
+      alert('请在地图上点击选择车辆位置');
+      map.on('click', function(e) {
+        if (rentMarker) rentMarker.setMap(null);
+        rentMarker = new AMap.Marker({
+          position: e.lnglat,
+          icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png'
+        });
+        rentMarker.setMap(map);
+
+        const lnglat = e.lnglat;
+        geocoder.getAddress(lnglat, (status, result) => {
+          if (status === 'complete') {
+            const address = result.regeocode.formattedAddress;
+            const desc = prompt('请输入车辆描述（如：电动车，3元/小时）', address);
+            if (desc) {
+              // TODO: 调用后端 API 保存
+              alert(`出租成功！位置：${address}\n描述：${desc}`);
+            }
+          }
+        });
+
+        map.off('click'); // 取消监听
+      });
+    };
+
+    loadVehicles();
+  });
+</script>
+</body>
