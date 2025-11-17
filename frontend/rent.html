@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>出租车辆</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=a49a852abb90dd6856b2d10227220702&plugin=AMap.Geocoder"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>出租车辆</h1>
+      <button onclick="history.back()" class="btn-logout">返回</button>
+    </header>
+
+    <section class="map">
+      <h2>点击地图选择车辆位置</h2>
+      <div id="map-container" style="height:500px; width:100%; background:#eee;"></div>
+    </section>
+
+    <section class="form">
+      <h2>填写车辆信息</h2>
+      <form id="rent-form">
+        <label>
+          <span>车辆类型：</span>
+          <select name="type" required>
+            <option value="bicycle">自行车</option>
+            <option value="ebike">电动车</option>
+          </select>
+        </label>
+
+        <label>
+          <span>每小时价格（元）：</span>
+          <input type="number" name="price" min="1" step="0.5" placeholder="例如：3" required>
+        </label>
+
+        <label>
+          <span>详细描述（可选）：</span>
+          <textarea name="desc" placeholder="例如：黑色电动车，车牌号：晋A12345"></textarea>
+        </label>
+
+        <input type="hidden" name="lng" id="lng">
+        <input type="hidden" name="lat" id="lat">
+        <input type="hidden" name="address" id="address">
+
+        <button type="submit" class="btn-success">提交出租</button>
+      </form>
+    </section>
+  </div>
+
+  <script>
+  let map, geocoder, marker;
+  const user_id = localStorage.getItem('user_id'); // 登录时保存
+
+  function initMap() {
+    map = new AMap.Map('map-container', {
+      zoom: 16,
+      center: [112.58451, 37.79676],
+      resizeEnable: true
+    });
+    geocoder = new AMap.Geocoder();
+
+    map.on('click', function(e) {
+      const lnglat = e.lnglat;
+      document.getElementById('lng').value = lnglat.lng;
+      document.getElementById('lat').value = lnglat.lat;
+
+      if (marker) marker.setMap(null);
+      marker = new AMap.Marker({
+        position: lnglat,
+        icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png'
+      });
+      marker.setMap(map);
+
+      geocoder.getAddress(lnglat, (status, result) => {
+        if (status === 'complete') {
+          document.getElementById('address').value = result.regeocode.formattedAddress;
+        }
+      });
+    });
+  }
+
+// rent.html 提交函数（替换）
+document.getElementById('rent-form').onsubmit = async function(e) {
+  e.preventDefault();
+  const user_id = localStorage.getItem('user_id');
+  if (!user_id) {
+    alert('请先登录！');
+    location.href = '/';
+    return;
+  }
+  if (!document.getElementById('lng').value) {
+    alert('请在地图上标记位置！');
+    return;
+  }
+
+  const data = {
+    type: this.type.value,
+    price_per_hour: this.price.value,
+    location_desc: this.address.value + ' ' + (this.desc.value || '').trim(),
+    lng: this.lng.value,
+    lat: this.lat.value
+  };
+
+  const res = await fetch('/api/rent', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + user_id
+    },
+    body: JSON.stringify(data)
+  });
+
+  const result = await res.json();
+  alert(result.msg);
+  if (res.ok) history.back();
+};
+
+  initMap();
+</script>
+</body>
+</html>

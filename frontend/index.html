@@ -2,70 +2,168 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>校园车联 · 首页</title>
+  <title>校园车联</title>
   <link rel="stylesheet" href="assets/style.css">
+  <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=a49a852abb90dd6856b2d10227220702&plugin=AMap.Geocoder"></script>
 </head>
-
-
 <body>
-  <div class="container">
-<header>
-  <h1>校园车联</h1>
-  <nav>
-    <a href="login.html">登录</a> |
-    <a href="register.html">注册</a> |
-    <a href="post.html">发布代拿</a> |
-    <a href="admin.html">管理员</a> |
-    <button onclick="startRent()" style="background:#28a745;color:white;padding:8px 16px;border:none;border-radius:6px;cursor:pointer;">
-      出租车辆
-    </button>
-  </nav>
-</header>
-
-    <!-- 地图区域 -->
-    <section class="map">
-      <h2>校园地图（高德）</h2>
-      <div id="map-container" style="height: 500px; width: 100%;"></div>
-    </section>
-
-    <!-- 车辆列表 -->
-<section class="filter">
-  <h2>筛选车辆</h2>
-  <label>
-    <input type="checkbox" id="filter-ebike" checked> 电动车
-  </label>
-  <label>
-    <input type="checkbox" id="filter-bicycle" checked> 自行车
-  </label>
-  <label>
-    价格：¥<input type="number" id="min-price" value="0" min="0" step="0.5"> 
-    - ¥<input type="number" id="max-price" value="10" min="0" step="0.5">
-  </label>
-  <button onclick="applyFilter()">筛选</button>
-</section>
-
-<section class="vehicles">
-  <h2>可租车辆</h2>
-  <div id="vehicle-list">加载中...</div>
-</section>
+  <!-- 登录页 -->
+  <div id="auth-page" class="auth-container">
+    <div class="auth-card">
+      <h2>校园车联</h2>
+      <input type="text" id="login-student-id" placeholder="学号">
+      <input type="password" id="login-password" placeholder="密码">
+      <button onclick="login()" class="btn-primary">登录</button>
+      <p><a href="#" onclick="showRegister()">没有账号？去注册</a></p>
+    </div>
   </div>
 
-  <!-- 高德地图脚本（放在 body 末尾）-->
-<script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=a49a852abb90dd6856b2d10227220702&plugin=AMap.Geocoder,AMap.MarkerCluster"></script>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const map = new AMap.Map('map-container', {
-      zoom: 16,
-      center: [112.58451, 37.79676],
-      resizeEnable: true
-    });
+  <!-- 注册页 -->
+  <div id="register-page" class="auth-container" style="display:none;">
+    <div class="auth-card">
+      <h2>注册</h2>
+      <input type="text" id="reg-student-id" placeholder="学号">
+      <input type="text" id="reg-name" placeholder="姓名">
+      <input type="password" id="reg-password" placeholder="密码">
+      <button onclick="register()" class="btn-primary">注册</button>
+      <p><a href="#" onclick="showLogin()">返回登录</a></p>
+    </div>
+  </div>
 
-    const geocoder = new AMap.Geocoder();
+  <!-- 主页 -->
+  <div id="main-page" style="display:none;">
+    <div class="container">
+      <header>
+        <h1>校园车联 <span id="user-info"></span></h1>
+        <nav>
+          <button onclick="location.href='rent.html'" class="btn-success">出租车辆</button>
+          <!-- 我的出租按钮 -->
+          <div id="my-rentals-btn" style="display:none; display:inline-block;">
+            <button onclick="showMyRentals()" class="btn-primary">我的出租</button>
+          </div>
+          <button onclick="logout()" class="btn-logout">退出</button>
+        </nav>
+      </header>
+
+      <!-- 管理员审核 -->
+      <section id="admin-panel" style="display:none;">
+        <h2>管理员审核中心</h2>
+        <div id="pending-list">加载中...</div>
+      </section>
+
+      <!-- 用户内容 -->
+      <section id="user-content" style="display:none;">
+        <div class="filter">
+          <label><input type="checkbox" id="filter-ebike" checked> 电动车</label>
+          <label><input type="checkbox" id="filter-bicycle" checked> 自行车</label>
+          <label>价格：¥<input type="number" id="min-price" value="0" min="0" step="0.5"> - ¥<input type="number" id="max-price" value="10" min="0" step="0.5"></label>
+          <button onclick="applyFilter()" class="btn-primary">筛选</button>
+        </div>
+
+        <section class="map">
+          <h2>校园地图</h2>
+          <div id="map-container" style="height:500px; width:100%; background:#eee;"></div>
+        </section>
+
+        <section class="vehicles">
+          <h2>可租车辆</h2>
+          <div id="vehicle-list">加载中...</div>
+        </section>
+      </section>
+
+      <!-- 我的出租面板 -->
+      <section id="my-rentals-panel" style="display:none; margin:20px 0;">
+        <h2>
+          我的出租车辆 
+          <button onclick="backToHome()" style="float:right; font-size:14px; padding:4px 8px;">返回</button>
+        </h2>
+        <div id="my-rentals-list">加载中...</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
     let allVehicles = [];
-    let markers = [];
-    let rentMarker = null;
+    let map, geocoder;
 
-    // 加载所有车辆
+    function showLogin() { document.getElementById('auth-page').style.display = 'block'; document.getElementById('register-page').style.display = 'none'; document.getElementById('main-page').style.display = 'none'; }
+    function showRegister() { document.getElementById('auth-page').style.display = 'none'; document.getElementById('register-page').style.display = 'block'; document.getElementById('main-page').style.display = 'none'; }
+    function showMain() { document.getElementById('auth-page').style.display = 'none'; document.getElementById('register-page').style.display = 'none'; document.getElementById('main-page').style.display = 'block'; }
+
+    // 登录
+    async function login() {
+      const student_id = document.getElementById('login-student-id').value;
+      const password = document.getElementById('login-password').value;
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        currentUser = data.user;
+        localStorage.setItem('user_id', data.user.user_id);
+        document.getElementById('user-info').textContent = `欢迎，${data.user.name} (${data.user.role === 'admin' ? '管理员' : '学生'})`;
+        showMain();
+
+        if (data.user.role === 'admin') {
+          document.getElementById('user-content').style.display = 'none';
+          document.getElementById('admin-panel').style.display = 'block';
+          document.getElementById('my-rentals-btn').style.display = 'none';
+          loadPending();
+        } else {
+          document.getElementById('user-content').style.display = 'block';
+          document.getElementById('admin-panel').style.display = 'none';
+          document.getElementById('my-rentals-btn').style.display = 'inline-block';
+          setTimeout(() => {
+            initMap();
+            loadVehicles();
+          }, 100);
+        }
+      } else {
+        alert(data.msg);
+      }
+    }
+
+    // 注册
+    async function register() {
+      const student_id = document.getElementById('reg-student-id').value;
+      const name = document.getElementById('reg-name').value;
+      const password = document.getElementById('reg-password').value;
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id, name, password })
+      });
+      const data = await res.json();
+      alert(data.msg);
+      if (res.ok) showLogin();
+    }
+
+    // 退出
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('user_id');
+      showLogin();
+    }
+
+    // 初始化地图
+    function initMap() {
+      const container = document.getElementById('map-container');
+      if (!container || typeof AMap === 'undefined') {
+        setTimeout(initMap, 500);
+        return;
+      }
+      map = new AMap.Map(container, {
+        zoom: 16,
+        center: [112.58451, 37.79676],
+        resizeEnable: true
+      });
+      geocoder = new AMap.Geocoder();
+    }
+
+    // 加载车辆
     function loadVehicles() {
       fetch('/api/vehicles')
         .then(r => r.json())
@@ -84,18 +182,23 @@
           <p>位置：${v.location_desc}</p>
           <p>价格：¥${v.price_per_hour}/小时</p>
           <p>车主：${v.owner_name}</p>
+          <button onclick="rentVehicle(${v.vehicle_id})" class="btn-rent">租用</button>
         </div>
       `).join('') || '<p>暂无车辆</p>';
     }
 
     // 更新地图标记
     function updateMapMarkers(vehicles) {
-      markers.forEach(m => m.setMap(null));
-      markers = [];
-
+      if (!map) return;
+      map.clearMap();
       vehicles.forEach(v => {
+        const lnglat = v.lng && v.lat ? [parseFloat(v.lng), parseFloat(v.lat)] : [
+          112.58451 + (Math.random() - 0.5) * 0.01,
+          37.79676 + (Math.random() - 0.5) * 0.01
+        ];
+
         const marker = new AMap.Marker({
-          position: [112.58451 + (Math.random() - 0.5) * 0.01, 37.79676 + (Math.random() - 0.5) * 0.01],
+          position: lnglat,
           title: v.location_desc,
           icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png',
           label: { content: `¥${v.price_per_hour}`, direction: 'top' }
@@ -103,13 +206,22 @@
 
         marker.on('click', () => {
           new AMap.InfoWindow({
-            content: `<div style="padding:10px;"><h4>${v.type === 'ebike' ? '电动车' : '自行车'}</h4><p>¥${v.price_per_hour}/小时</p></div>`,
+            content: `
+              <div style="padding:10px;">
+                <h4>${v.type === 'ebike' ? '电动车' : '自行车'}</h4>
+                <p><strong>位置：</strong>${v.location_desc}</p>
+                <p><strong>价格：</strong>¥${v.price_per_hour}/小时</p>
+                <p><strong>车主：</strong>${v.owner_name}</p>
+                <button onclick="rentVehicle(${v.vehicle_id})" style="margin-top:8px; padding:6px 12px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;">
+                  立即租用
+                </button>
+              </div>
+            `,
             offset: new AMap.Pixel(0, -30)
-          }).open(map, marker.getPosition());
+          }).open(map, lnglat);
         });
 
         marker.setMap(map);
-        markers.push(marker);
       });
     }
 
@@ -130,34 +242,150 @@
       updateMapMarkers(filtered);
     };
 
-    // 出租模式
-    window.startRent = function() {
-      alert('请在地图上点击选择车辆位置');
-      map.on('click', function(e) {
-        if (rentMarker) rentMarker.setMap(null);
-        rentMarker = new AMap.Marker({
-          position: e.lnglat,
-          icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png'
-        });
-        rentMarker.setMap(map);
-
-        const lnglat = e.lnglat;
-        geocoder.getAddress(lnglat, (status, result) => {
-          if (status === 'complete') {
-            const address = result.regeocode.formattedAddress;
-            const desc = prompt('请输入车辆描述（如：电动车，3元/小时）', address);
-            if (desc) {
-              // TODO: 调用后端 API 保存
-              alert(`出租成功！位置：${address}\n描述：${desc}`);
-            }
-          }
-        });
-
-        map.off('click'); // 取消监听
-      });
+    // 租用
+    window.rentVehicle = function(id) {
+      if (!currentUser) return alert('请先登录');
+      alert(`租用 ID: ${id}`);
     };
 
-    loadVehicles();
+    // 显示我的出租
+// 显示我的出租（优化：撤回后显示“删除记录”）
+// 显示我的出租（优化：排序 + 删除后消失）
+async function showMyRentals() {
+  document.getElementById('user-content').style.display = 'none';
+  document.getElementById('my-rentals-panel').style.display = 'block';
+
+  const user_id = localStorage.getItem('user_id');
+  if (!user_id) {
+    alert('请先登录');
+    backToHome();
+    return;
+  }
+
+  const res = await fetch('/api/my-rentals?user_id=' + user_id);
+  let vehicles = await res.json();
+
+  // 排序：1.已上架 2.待审核 3.已撤回
+  vehicles.sort((a, b) => {
+    const status = { 1: 0, 0: 1, '-1': 2 };
+    return status[a.is_verified] - status[b.is_verified];
   });
-</script>
+
+  document.getElementById('my-rentals-list').innerHTML = vehicles.map(v => {
+    const isWithdrawn = v.is_verified === -1;
+    return `
+      <div class="vehicle-card" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3>${v.type === 'ebike' ? '电动车' : '自行车'}</h3>
+          <p>位置：${v.location_desc}</p>
+          <p>价格：¥${v.price_per_hour}/小时</p>
+          <p>状态：<span style="color:${
+            v.is_verified === 1 ? '#28a745' : 
+            v.is_verified === 0 ? '#ffc107' : '#dc3545'
+          }">
+            ${v.is_verified === 1 ? '已上架' : v.is_verified === 0 ? '待审核' : '已撤回'}
+          </span></p>
+        </div>
+        <button onclick="${
+          isWithdrawn ? `deleteVehicle(${v.vehicle_id})` : `withdrawVehicle(${v.vehicle_id})`
+        }" 
+                class="btn-${isWithdrawn ? 'danger' : 'logout'}" 
+                style="height:40px; padding:6px 12px;">
+          ${isWithdrawn ? '删除记录' : '撤回'}
+        </button>
+      </div>
+    `;
+  }).join('') || '<p>你还没有出租车辆</p>';
+}
+
+    // 撤回车辆
+    async function withdrawVehicle(id) {
+      if (!confirm('确定要撤回这辆车吗？')) return;
+
+      const res = await fetch('/api/withdraw', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('user_id')
+        },
+        body: JSON.stringify({ vehicle_id: id })
+      });
+      const data = await res.json();
+      alert(data.msg);
+      if (res.ok) {
+        showMyRentals();
+        loadVehicles();
+      }
+    }
+
+// 删除记录（已优化）
+async function deleteVehicle(id) {
+  if (!confirm('确定要彻底删除这条记录吗？（不可恢复）')) return;
+
+  const res = await fetch('/api/delete-vehicle', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + localStorage.getItem('user_id')
+    },
+    body: JSON.stringify({ vehicle_id: id })
+  });
+  const data = await res.json();
+  alert(data.msg);
+  if (res.ok) {
+    showMyRentals(); // 重新加载，删除项消失
+  }
+}
+
+    // 返回主页
+    function backToHome() {
+      document.getElementById('my-rentals-panel').style.display = 'none';
+      document.getElementById('user-content').style.display = 'block';
+    }
+
+    // 管理员审核
+    async function loadPending() {
+      const res = await fetch('/api/admin/pending');
+      const data = await res.json();
+
+      const html = `
+        <div class="pending-section">
+          <h3>待审核用户 (${data.users.length})</h3>
+          ${data.users.map(u => `
+            <div class="pending-item">
+              <span>${u.student_id} - ${u.name}</span>
+              <button onclick="approve('user', ${u.user_id})" class="btn-approve">通过</button>
+            </div>
+          `).join('') || '<p>暂无</p>'}
+        </div>
+
+        <div class="pending-section">
+          <h3>待审核车辆 (${data.vehicles.length})</h3>
+          ${data.vehicles.map(v => `
+            <div class="pending-item">
+              <span>${v.type === 'ebike' ? '电动车' : '自行车'} - ${v.location_desc}</span>
+              <button onclick="approve('vehicle', ${v.vehicle_id})" class="btn-approve">通过</button>
+            </div>
+          `).join('') || '<p>暂无</p>'}
+        </div>
+      `;
+
+      document.getElementById('pending-list').innerHTML = html;
+    }
+
+    async function approve(type, id) {
+      const res = await fetch('/api/admin/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id })
+      });
+      const data = await res.json();
+      alert(data.msg);
+      loadPending();
+    }
+
+    // 启动
+    showLogin();
+  </script>
 </body>
+</html>

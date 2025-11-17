@@ -6,29 +6,69 @@
 </head>
 <body>
   <div class="container">
-    <h2>待审核内容</h2>
-    <div id="pending"></div>
+    <header>
+      <h1>管理员审核中心</h1>
+      <button onclick="location.href='/'" class="btn-logout">返回首页</button>
+    </header>
+
+    <section class="pending">
+      <h2>待审核内容</h2>
+      <div id="pending-list">加载中...</div>
+    </section>
   </div>
 
   <script>
-    fetch('/api/admin/pending')
-      .then(r => r.json())
-      .then(data => {
-        const html = `
-          <h3>用户 (${data.users.length})</h3>
-          ${data.users.map(u => `<p>${u.student_id} - ${u.name} <button onclick="approve('user', ${u.user_id})">通过</button></p>`).join('')}
-          <h3>车辆 (${data.vehicles.length})</h3>
-          ${data.vehicles.map(v => `<p>${v.type} - ${v.location_desc} <button onclick="approve('vehicle', ${v.vehicle_id})">通过</button></p>`).join('')}
-          <h3>代拿 (${data.posts.length})</h3>
-          ${data.posts.map(p => `<p>${p.title} <button onclick="approve('post', ${p.post_id})">通过</button></p>`).join('')}
-        `;
-        document.getElementById('pending').innerHTML = html || '<p>暂无待审核</p>';
-      });
+    async function loadPending() {
+      const res = await fetch('/api/admin/pending');
+      const data = await res.json();
 
-    function approve(type, id) {
-      alert(`已通过 ${type} ID: ${id}`);
-      // TODO: 调用后端审核接口
+      const html = `
+        <div class="pending-section">
+          <h3>待审核用户 (${data.users.length})</h3>
+          ${data.users.map(u => `
+            <div class="pending-item">
+              <span>${u.student_id} - ${u.name}</span>
+              <button onclick="approve('user', ${u.user_id})" class="btn-approve">通过</button>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="pending-section">
+          <h3>待审核车辆 (${data.vehicles.length})</h3>
+          ${data.vehicles.map(v => `
+            <div class="pending-item">
+              <span>${v.type === 'ebike' ? '电动车' : '自行车'} - ${v.location_desc}</span>
+              <button onclick="approve('vehicle', ${v.vehicle_id})" class="btn-approve">通过</button>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="pending-section">
+          <h3>待审核代拿 (${data.posts.length})</h3>
+          ${data.posts.map(p => `
+            <div class="pending-item">
+              <span>${p.title} - ${p.pickup_location || ''} → ${p.deliver_location || ''}</span>
+              <button onclick="approve('post', ${p.post_id})" class="btn-approve">通过</button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      document.getElementById('pending-list').innerHTML = html || '<p>暂无待审核</p>';
     }
+
+    async function approve(type, id) {
+      const res = await fetch('/api/admin/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id })
+      });
+      const data = await res.json();
+      alert(data.msg);
+      loadPending();
+    }
+
+    loadPending();
   </script>
 </body>
 </html>
