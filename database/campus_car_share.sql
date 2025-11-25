@@ -31,11 +31,35 @@ CREATE TABLE `posts` (
   `pickup_location` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `deliver_location` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `deadline` datetime DEFAULT NULL,
+  `route` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '出行路线（求合租车）',
+  `share_time` datetime DEFAULT NULL COMMENT '出行时间（求合租车）',
+  `share_person` int DEFAULT NULL COMMENT '可拼人数（求合租车）',
+  `remark` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
   `is_verified` tinyint(1) DEFAULT '0',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`post_id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
+-- Table structure for post_accepts
+-- ----------------------------
+DROP TABLE IF EXISTS `post_accepts`;
+CREATE TABLE `post_accepts` (
+  `accept_id` int NOT NULL AUTO_INCREMENT,
+  `post_id` int NOT NULL,
+  `accepter_id` int NOT NULL COMMENT '接单者ID',
+  `status` enum('pending','accepted','completed','cancelled') COLLATE utf8mb4_unicode_ci DEFAULT 'pending' COMMENT '接单状态',
+  `voucher_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '凭证图片URL',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `completed_at` datetime DEFAULT NULL COMMENT '完成时间',
+  PRIMARY KEY (`accept_id`),
+  KEY `post_id` (`post_id`),
+  KEY `accepter_id` (`accepter_id`),
+  CONSTRAINT `post_accepts_ibfk_1` FOREIGN KEY (`post_id`) REFERENCES `posts` (`post_id`) ON DELETE CASCADE,
+  CONSTRAINT `post_accepts_ibfk_2` FOREIGN KEY (`accepter_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------
 -- Records of posts
@@ -53,6 +77,7 @@ CREATE TABLE `users` (
   `student_id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '学号',
   `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '手机号',
   `role` enum('student','admin') COLLATE utf8mb4_unicode_ci DEFAULT 'student',
   `is_verified` tinyint(1) DEFAULT '0',
   `status` enum('active','blacklist','banned') COLLATE utf8mb4_unicode_ci DEFAULT 'active',
@@ -85,6 +110,7 @@ CREATE TABLE `vehicles` (
   `image_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `lng` decimal(10,6) DEFAULT NULL,
   `lat` decimal(10,6) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`vehicle_id`),
   KEY `owner_id` (`owner_id`),
   CONSTRAINT `vehicles_ibfk_1` FOREIGN KEY (`owner_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
@@ -102,5 +128,28 @@ INSERT INTO `vehicles` (`vehicle_id`, `owner_id`, `type`, `location_desc`, `pric
 INSERT INTO `vehicles` (`vehicle_id`, `owner_id`, `type`, `location_desc`, `price_per_hour`, `is_verified`, `image_url`, `lng`, `lat`) VALUES (4, 4, 'bicycle', ' segesgsegesgsegsgse', 4.50, 1, NULL, 112.588147, 37.797145);
 INSERT INTO `vehicles` (`vehicle_id`, `owner_id`, `type`, `location_desc`, `price_per_hour`, `is_verified`, `image_url`, `lng`, `lat`) VALUES (5, 4, 'ebike', ' sgezgzegzgedgdfhdxhxdfhx', 4.00, 1, NULL, 112.587761, 37.799213);
 COMMIT;
+
+-- ----------------------------
+-- Table structure for orders
+-- ----------------------------
+DROP TABLE IF EXISTS `orders`;
+CREATE TABLE `orders` (
+  `order_id` int NOT NULL AUTO_INCREMENT,
+  `vehicle_id` int NOT NULL,
+  `renter_id` int NOT NULL COMMENT '租用者ID',
+  `owner_id` int NOT NULL COMMENT '车主ID',
+  `hours` int NOT NULL COMMENT '租用时长（小时）',
+  `total_fee` decimal(5,2) NOT NULL COMMENT '总费用',
+  `status` enum('pending','confirmed','completed','cancelled') COLLATE utf8mb4_unicode_ci DEFAULT 'pending' COMMENT '订单状态',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `completed_at` datetime DEFAULT NULL COMMENT '完成时间',
+  PRIMARY KEY (`order_id`),
+  KEY `vehicle_id` (`vehicle_id`),
+  KEY `renter_id` (`renter_id`),
+  KEY `owner_id` (`owner_id`),
+  CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`vehicle_id`) ON DELETE CASCADE,
+  CONSTRAINT `orders_ibfk_2` FOREIGN KEY (`renter_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `orders_ibfk_3` FOREIGN KEY (`owner_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

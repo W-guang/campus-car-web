@@ -1,34 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <title>注册</title>
-  <link rel="stylesheet" href="assets/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>注册 - 校园车辆管理系统</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #e8f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .register-container {
+      background-color: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+      width: 100%;
+      max-width: 450px;
+    }
+    .btn-primary {
+      background-color: #4299e1;
+      border-color: #4299e1;
+    }
+    .btn-primary:hover {
+      background-color: #3182ce;
+      border-color: #3182ce;
+    }
+  </style>
 </head>
 <body>
-  <div class="form-container">
-    <h2>注册</h2>
-    <input type="text" id="student_id" placeholder="学号">
-    <input type="text" id="name" placeholder="姓名">
-    <input type="password" id="password" placeholder="密码">
-    <button onclick="register()">注册</button>
-    <p><a href="login.html">已有账号？去登录</a></p>
+  <div class="register-container">
+    <h2 class="text-center mb-4">用户注册</h2>
+    <form id="registerForm">
+      <div class="mb-3">
+        <label for="student_id" class="form-label">学号</label>
+        <input type="text" class="form-control" id="student_id" placeholder="请输入学号" required>
+      </div>
+      <div class="mb-3">
+        <label for="name" class="form-label">姓名</label>
+        <input type="text" class="form-control" id="name" placeholder="请输入姓名" required>
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">密码</label>
+        <input type="password" class="form-control" id="password" placeholder="请设置密码" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">注册</button>
+    </form>
+    <p class="text-center mt-3">
+      <a href="login.html" style="color: #4299e1;">已有账号？去登录</a>
+    </p>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    async function register() {
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const student_id = document.getElementById('student_id').value;
+      const name = document.getElementById('name').value;
+      const password = document.getElementById('password').value;
+      
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          student_id: document.getElementById('student_id').value,
-          name: document.getElementById('name').value,
-          password: document.getElementById('password').value
-        })
+        body: JSON.stringify({ student_id, name, password })
       });
       const data = await res.json();
       alert(data.msg);
-      if (res.ok) location.href = 'login.html';
-    }
+      if (res.ok) {
+        location.href = 'login.html';
+      }
+    });
   </script>
 </body>
 </html>

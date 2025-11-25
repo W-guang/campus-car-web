@@ -1,14 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <title>管理员审核</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理员审核 - 校园车辆管理系统</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .navbar-brand {
+      font-size: 1.8rem !important;
+      font-weight: bold;
+      pointer-events: none;
+      cursor: default;
+    }
+    .nav-link {
+      font-size: 1.1rem;
+      margin: 0 8px;
+    }
+    .pending-section {
+      margin: 20px 0;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .pending-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .pending-item:last-child {
+      border-bottom: none;
+    }
+    .btn-approve {
+      background: #28a745;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-approve:hover {
+      background: #218838;
+    }
+    .btn-primary {
+      background-color: #4299e1;
+      border-color: #4299e1;
+    }
+  </style>
 </head>
 <body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+    <div class="container">
+      <a class="navbar-brand text-primary" href="/index.html">校园车辆管理系统</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item"><a class="nav-link text-dark" href="/index.html">首页</a></li>
+          <li class="nav-item"><a class="nav-link text-dark" href="/carRent.html">租车</a></li>
+          <li class="nav-item"><a class="nav-link text-dark" href="/forum.html">论坛</a></li>
+          <li class="nav-item"><a class="nav-link text-dark" href="/blacklist.html">黑名单</a></li>
+        </ul>
+        <ul class="navbar-nav">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-primary" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+              个人中心
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" id="userMenu">
+              <li><a class="dropdown-item" href="/login.html">请先登录</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
   <div class="container">
-    <header>
+    <header class="mb-4">
       <h1>管理员审核中心</h1>
-      <button onclick="location.href='/'" class="btn-logout">返回首页</button>
+      <button onclick="location.href='/index.html'" class="btn btn-secondary">返回首页</button>
     </header>
 
     <section class="pending">
@@ -17,7 +89,50 @@
     </section>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // 检查登录状态和权限
+    document.addEventListener('DOMContentLoaded', function() {
+      const token = localStorage.getItem('token');
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null');
+      
+      if (!token || !userInfo || userInfo.role !== 'admin') {
+        alert('请先以管理员身份登录');
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      // 初始化菜单
+      const menuElement = document.getElementById("userMenu");
+      menuElement.innerHTML = `
+        <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+        <li><a class="dropdown-item" href="/admin.html">管理员后台</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="#" onclick="logout()">退出登录</a></li>
+      `;
+      
+      document.querySelector('[onclick="logout()"]')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (confirm("确定要退出登录吗？")) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("userInfo");
+          localStorage.removeItem("user_id");
+          window.location.href = "/login.html";
+        }
+      });
+      
+      loadPending();
+    });
+    
+    function logout() {
+      if (confirm("确定要退出登录吗？")) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userInfo");
+        localStorage.removeItem("user_id");
+        window.location.href = "/login.html";
+      }
+    }
+    
     async function loadPending() {
       const res = await fetch('/api/admin/pending');
       const data = await res.json();
@@ -30,7 +145,7 @@
               <span>${u.student_id} - ${u.name}</span>
               <button onclick="approve('user', ${u.user_id})" class="btn-approve">通过</button>
             </div>
-          `).join('')}
+          `).join('') || '<p>暂无</p>'}
         </div>
 
         <div class="pending-section">
@@ -40,17 +155,17 @@
               <span>${v.type === 'ebike' ? '电动车' : '自行车'} - ${v.location_desc}</span>
               <button onclick="approve('vehicle', ${v.vehicle_id})" class="btn-approve">通过</button>
             </div>
-          `).join('')}
+          `).join('') || '<p>暂无</p>'}
         </div>
 
         <div class="pending-section">
-          <h3>待审核代拿 (${data.posts.length})</h3>
-          ${data.posts.map(p => `
+          <h3>待审核代拿 (${data.posts ? data.posts.length : 0})</h3>
+          ${data.posts && data.posts.length > 0 ? data.posts.map(p => `
             <div class="pending-item">
-              <span>${p.title} - ${p.pickup_location || ''} → ${p.deliver_location || ''}</span>
+              <span>${p.title || ''} - ${p.pickup_location || ''} → ${p.deliver_location || ''}</span>
               <button onclick="approve('post', ${p.post_id})" class="btn-approve">通过</button>
             </div>
-          `).join('')}
+          `).join('') : '<p>暂无</p>'}
         </div>
       `;
 

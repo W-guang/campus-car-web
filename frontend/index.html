@@ -2,15 +2,66 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>校园车联</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>首页 - 校园车辆管理系统</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/style.css">
   <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=a49a852abb90dd6856b2d10227220702&plugin=AMap.Geocoder"></script>
+  <style>
+    .navbar-brand {
+      font-size: 1.8rem !important;
+      font-weight: bold;
+      pointer-events: none;
+      cursor: default;
+    }
+    .nav-link {
+      font-size: 1.1rem;
+      margin: 0 8px;
+    }
+    #map-container {
+      width: 100%;
+      height: 70vh;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .stat-card h6 {
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .stat-card .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4299e1;
+    }
+    .vehicle-card {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .filter {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
 <body>
   <!-- 登录页 -->
   <div id="auth-page" class="auth-container">
     <div class="auth-card">
-      <h2>校园车联</h2>
+      <h2>校园车辆管理系统</h2>
       <input type="text" id="login-student-id" placeholder="学号">
       <input type="password" id="login-password" placeholder="密码">
       <button onclick="login()" class="btn-primary">登录</button>
@@ -32,40 +83,65 @@
 
   <!-- 主页 -->
   <div id="main-page" style="display:none;">
+    <!-- 头部导航 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+      <div class="container">
+        <a class="navbar-brand text-primary" href="/index.html">校园车辆管理系统</a>
+        <div class="collapse navbar-collapse">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item"><a class="nav-link active text-dark" href="/index.html">首页</a></li>
+            <li class="nav-item"><a class="nav-link text-dark" href="/carRent.html">租车</a></li>
+            <li class="nav-item"><a class="nav-link text-dark" href="/forum.html">论坛</a></li>
+            <li class="nav-item"><a class="nav-link text-dark" href="/blacklist.html">黑名单</a></li>
+          </ul>
+          <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle text-primary" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                个人中心
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" id="userMenu">
+                <li><a class="dropdown-item" href="/login.html">请先登录</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
     <div class="container">
-      <header>
-        <h1>校园车联 <span id="user-info"></span></h1>
-        <nav>
-          <button onclick="location.href='rent.html'" class="btn-success">出租车辆</button>
-          <!-- 我的出租按钮 -->
-          <div id="my-rentals-btn" style="display:none; display:inline-block;">
-            <button onclick="showMyRentals()" class="btn-primary">我的出租</button>
-          </div>
-          <button onclick="logout()" class="btn-logout">退出</button>
-        </nav>
-      </header>
-
-      <!-- 管理员审核 -->
-      <section id="admin-panel" style="display:none;">
-        <h2>管理员审核中心</h2>
-        <div id="pending-list">加载中...</div>
-      </section>
-
       <!-- 用户内容 -->
       <section id="user-content" style="display:none;">
-        <div class="filter">
-          <label><input type="checkbox" id="filter-ebike" checked> 电动车</label>
-          <label><input type="checkbox" id="filter-bicycle" checked> 自行车</label>
-          <label>价格：¥<input type="number" id="min-price" value="0" min="0" step="0.5"> - ¥<input type="number" id="max-price" value="10" min="0" step="0.5"></label>
-          <button onclick="applyFilter()" class="btn-primary">筛选</button>
+        <div class="row">
+          <!-- 左侧地图（占8列） -->
+          <div class="col-lg-8">
+            <h5 class="mb-3 text-dark">校园车辆分布地图</h5>
+            <div class="filter">
+              <label><input type="checkbox" id="filter-ebike" checked> 电动车</label>
+              <label><input type="checkbox" id="filter-bicycle" checked> 自行车</label>
+              <label>价格：¥<input type="number" id="min-price" value="0" min="0" step="0.5"> - ¥<input type="number" id="max-price" value="10" min="0" step="0.5"></label>
+              <button onclick="applyFilter()" class="btn btn-primary">筛选</button>
+            </div>
+            <div id="map-container"></div>
+          </div>
+          <!-- 右侧统计（占4列） -->
+          <div class="col-lg-4">
+            <h5 class="mb-3 text-dark">系统实时统计</h5>
+            <div class="stat-card">
+              <h6>当前可租车辆</h6>
+              <div class="stat-value" id="carCount">0</div>
+            </div>
+            <div class="stat-card">
+              <h6>今日租车订单</h6>
+              <div class="stat-value" id="orderCount">0</div>
+            </div>
+            <div class="stat-card">
+              <h6>今日新发布车辆</h6>
+              <div class="stat-value" id="todayRegisterCount">0</div>
+            </div>
+          </div>
         </div>
 
-        <section class="map">
-          <h2>校园地图</h2>
-          <div id="map-container" style="height:500px; width:100%; background:#eee;"></div>
-        </section>
-
-        <section class="vehicles">
+        <section class="vehicles mt-4">
           <h2>可租车辆</h2>
           <div id="vehicle-list">加载中...</div>
         </section>
@@ -75,13 +151,14 @@
       <section id="my-rentals-panel" style="display:none; margin:20px 0;">
         <h2>
           我的出租车辆 
-          <button onclick="backToHome()" style="float:right; font-size:14px; padding:4px 8px;">返回</button>
+          <button onclick="backToHome()" class="btn btn-secondary" style="float:right; font-size:14px; padding:4px 8px;">返回</button>
         </h2>
         <div id="my-rentals-list">加载中...</div>
       </section>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     let currentUser = null;
     let allVehicles = [];
@@ -90,6 +167,98 @@
     function showLogin() { document.getElementById('auth-page').style.display = 'block'; document.getElementById('register-page').style.display = 'none'; document.getElementById('main-page').style.display = 'none'; }
     function showRegister() { document.getElementById('auth-page').style.display = 'none'; document.getElementById('register-page').style.display = 'block'; document.getElementById('main-page').style.display = 'none'; }
     function showMain() { document.getElementById('auth-page').style.display = 'none'; document.getElementById('register-page').style.display = 'none'; document.getElementById('main-page').style.display = 'block'; }
+
+    // 页面加载时检查登录状态
+    document.addEventListener('DOMContentLoaded', function() {
+      const token = localStorage.getItem('token');
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null');
+      const user_id = localStorage.getItem('user_id');
+      
+      if (token && userInfo && user_id) {
+        // 已登录，恢复用户信息
+        currentUser = {
+          user_id: parseInt(user_id),
+          student_id: userInfo.studentId || userInfo.account,
+          name: userInfo.name,
+          role: userInfo.role === 'admin' ? 'admin' : 'student'
+        };
+        
+        // 管理员直接跳转到后台
+        if (currentUser.role === 'admin') {
+          window.location.href = '/admin.html';
+          return;
+        }
+        
+        // 普通用户显示主页
+        showMain();
+        initUserMenu();
+        setTimeout(() => {
+          initMap();
+          loadVehicles();
+        }, 100);
+      } else {
+        // 未登录，显示登录页
+        showLogin();
+      }
+    });
+
+    // 初始化个人中心菜单
+    function initUserMenu() {
+      const userInfo = currentUser ? { role: currentUser.role === 'admin' ? 'admin' : 'user', studentId: currentUser.student_id, name: currentUser.name } : null;
+      const menuElement = document.getElementById("userMenu");
+      if (!userInfo) return;
+
+      menuElement.innerHTML = "";
+      if (userInfo.role === "user") {
+        menuElement.innerHTML = `
+          <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+          <li><a class="dropdown-item" href="/rent.html">车辆发布</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" onclick="logout()">退出登录</a></li>
+        `;
+      } else if (userInfo.role === "admin") {
+        menuElement.innerHTML = `
+          <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+          <li><a class="dropdown-item" href="/admin.html">管理员后台</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" onclick="logout()">退出登录</a></li>
+        `;
+      }
+    }
+
+    // 加载统计数据（从数据库获取）
+    async function loadStatData() {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        if (res.ok) {
+          updateStatValue("carCount", data.carCount || 0);
+          updateStatValue("orderCount", data.todayOrderCount || 0);
+          updateStatValue("todayRegisterCount", data.todayVehicleCount || 0);
+        }
+      } catch (error) {
+        console.error('加载统计数据失败:', error);
+        // 如果API失败，至少显示车辆数量
+        if (allVehicles.length > 0) {
+          updateStatValue("carCount", allVehicles.length);
+        }
+      }
+    }
+
+    function updateStatValue(id, target) {
+      const element = document.getElementById(id);
+      if (!element) return;
+      let current = 0;
+      const step = Math.ceil(target / 50);
+      const timer = setInterval(() => {
+        current += step;
+        if (current >= target) {
+          current = target;
+          clearInterval(timer);
+        }
+        element.textContent = current;
+      }, 30);
+    }
 
     // 登录
     async function login() {
@@ -104,18 +273,20 @@
       if (res.ok) {
         currentUser = data.user;
         localStorage.setItem('user_id', data.user.user_id);
-        document.getElementById('user-info').textContent = `欢迎，${data.user.name} (${data.user.role === 'admin' ? '管理员' : '学生'})`;
-        showMain();
-
+        localStorage.setItem('token', 'user_' + data.user.user_id);
+        localStorage.setItem('userInfo', JSON.stringify({
+          role: data.user.role === 'admin' ? 'admin' : 'user',
+          studentId: data.user.student_id,
+          name: data.user.name,
+          user_id: data.user.user_id
+        }));
+        // 管理员直接跳转到后台
         if (data.user.role === 'admin') {
-          document.getElementById('user-content').style.display = 'none';
-          document.getElementById('admin-panel').style.display = 'block';
-          document.getElementById('my-rentals-btn').style.display = 'none';
-          loadPending();
+          window.location.href = '/admin.html';
         } else {
-          document.getElementById('user-content').style.display = 'block';
-          document.getElementById('admin-panel').style.display = 'none';
-          document.getElementById('my-rentals-btn').style.display = 'inline-block';
+          // 普通用户显示主页
+          showMain();
+          initUserMenu();
           setTimeout(() => {
             initMap();
             loadVehicles();
@@ -143,9 +314,13 @@
 
     // 退出
     function logout() {
-      currentUser = null;
-      localStorage.removeItem('user_id');
-      showLogin();
+      if (confirm("确定要退出登录吗？")) {
+        currentUser = null;
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('token');
+        localStorage.removeItem('userInfo');
+        showLogin();
+      }
     }
 
     // 初始化地图
@@ -171,6 +346,7 @@
           allVehicles = vehicles;
           renderVehicles(vehicles);
           updateMapMarkers(vehicles);
+          loadStatData(); // 加载统计数据
         });
     }
 
@@ -244,8 +420,12 @@
 
     // 租用
     window.rentVehicle = function(id) {
-      if (!currentUser) return alert('请先登录');
-      alert(`租用 ID: ${id}`);
+      if (!currentUser) {
+        alert('请先登录');
+        window.location.href = '/login.html';
+        return;
+      }
+      window.location.href = `/carRent.html?vehicle_id=${id}`;
     };
 
     // 显示我的出租
@@ -343,49 +523,7 @@ async function deleteVehicle(id) {
       document.getElementById('user-content').style.display = 'block';
     }
 
-    // 管理员审核
-    async function loadPending() {
-      const res = await fetch('/api/admin/pending');
-      const data = await res.json();
-
-      const html = `
-        <div class="pending-section">
-          <h3>待审核用户 (${data.users.length})</h3>
-          ${data.users.map(u => `
-            <div class="pending-item">
-              <span>${u.student_id} - ${u.name}</span>
-              <button onclick="approve('user', ${u.user_id})" class="btn-approve">通过</button>
-            </div>
-          `).join('') || '<p>暂无</p>'}
-        </div>
-
-        <div class="pending-section">
-          <h3>待审核车辆 (${data.vehicles.length})</h3>
-          ${data.vehicles.map(v => `
-            <div class="pending-item">
-              <span>${v.type === 'ebike' ? '电动车' : '自行车'} - ${v.location_desc}</span>
-              <button onclick="approve('vehicle', ${v.vehicle_id})" class="btn-approve">通过</button>
-            </div>
-          `).join('') || '<p>暂无</p>'}
-        </div>
-      `;
-
-      document.getElementById('pending-list').innerHTML = html;
-    }
-
-    async function approve(type, id) {
-      const res = await fetch('/api/admin/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, id })
-      });
-      const data = await res.json();
-      alert(data.msg);
-      loadPending();
-    }
-
-    // 启动
-    showLogin();
+    // 启动逻辑已移到DOMContentLoaded中
   </script>
 </body>
 </html>

@@ -1,32 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <title>登录</title>
-  <link rel="stylesheet" href="assets/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - 校园车辆管理系统</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #e8f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-container {
+      background-color: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+      width: 100%;
+      max-width: 450px;
+    }
+    .tab-content {
+      margin-top: 30px;
+    }
+    .btn-primary {
+      background-color: #4299e1;
+      border-color: #4299e1;
+    }
+    .btn-primary:hover {
+      background-color: #3182ce;
+      border-color: #3182ce;
+    }
+    .register-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      color: #4299e1;
+      border: none;
+      background: transparent;
+    }
+    .register-btn:hover {
+      color: #3182ce;
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-  <div class="form-container">
-    <h2>登录</h2>
-    <input type="text" id="student_id" placeholder="学号">
-    <input type="password" id="password" placeholder="密码">
-    <button onclick="login()">登录</button>
-    <p><a href="register.html">没有账号？去注册</a></p>
+  <div class="login-container position-relative">
+    <h2 class="text-center mb-4">用户登录</h2>
+    <form id="userLoginForm">
+      <div class="mb-3">
+        <label for="userStudentId" class="form-label">学号</label>
+        <input type="text" class="form-control" id="userStudentId" placeholder="请输入学号" required>
+      </div>
+      <div class="mb-3">
+        <label for="userPassword" class="form-label">密码</label>
+        <input type="password" class="form-control" id="userPassword" placeholder="请输入密码" required>
+      </div>
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="userRemember">
+        <label class="form-check-label" for="userRemember">记住我</label>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">登录</button>
+    </form>
+
+    <button type="button" class="register-btn" onclick="location.href='register.html'">
+      注册账号
+    </button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    async function login() {
+    // 统一登录（支持普通用户和管理员）
+    document.getElementById('userLoginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const student_id = document.getElementById('userStudentId').value;
+      const password = document.getElementById('userPassword').value;
+      
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          student_id: document.getElementById('student_id').value,
-          password: document.getElementById('password').value
-        })
+        body: JSON.stringify({ student_id, password })
       });
       const data = await res.json();
-      alert(data.msg);
-      if (res.ok) location.href = '/';
-    }
+      
+      if (res.ok) {
+        localStorage.setItem('token', (data.user.role === 'admin' ? 'admin_' : 'user_') + data.user.user_id);
+        localStorage.setItem('user_id', data.user.user_id);
+        localStorage.setItem('userInfo', JSON.stringify({
+          studentId: data.user.student_id,
+          name: data.user.name,
+          role: data.user.role === 'admin' ? 'admin' : 'user',
+          user_id: data.user.user_id
+        }));
+        window.location.href = '/index.html';
+      } else {
+        alert(data.msg);
+      }
+    });
   </script>
 </body>
 </html>

@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论坛 - 校园车辆管理系统</title>
+    <!-- 引入依赖 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 导航栏样式（与首页保持一致） */
+        .navbar-brand {
+            font-size: 1.8rem !important;
+            font-weight: bold;
+            pointer-events: none;
+            cursor: default;
+        }
+        .nav-link {
+            font-size: 1.1rem;
+            margin: 0 8px;
+        }
+        /* 论坛头部样式 */
+        .forum-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .btn-publish {
+            background-color: #4299e1;
+            color: #fff;
+            border: none;
+        }
+        .btn-publish:hover {
+            background-color: #3182ce;
+            color: #fff;
+        }
+        /* 分类标签样式 */
+        .tag-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .tag {
+            padding: 6px 16px;
+            border-radius: 20px;
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .tag.active {
+            background-color: #4299e1;
+            color: #fff;
+        }
+        /* 帖子列表样式 */
+        .post-list {
+            gap: 15px;
+        }
+        .post-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            width: 100%;
+        }
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .post-tag {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background-color: #e8f4f8;
+            color: #4299e1;
+        }
+        .post-time {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .post-content {
+            margin-bottom: 10px;
+        }
+        .post-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+        .post-desc {
+            font-size: 0.9rem;
+            color: #64748b;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .post-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        .post-actions {
+            display: flex;
+            gap: 15px;
+        }
+        .action-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        /* 发布帖子模态框样式 */
+        .modal-header {
+            background-color: #e8f4f8;
+        }
+        .modal-body {
+            gap: 15px;
+        }
+        .form-group {
+            width: 100%;
+        }
+        /* 代拿服务模块样式 */
+        .take-service-section {
+            margin-top: 40px;
+            padding: 25px;
+            border-radius: 12px;
+            background-color: #f8fafc;
+            box-shadow: inset 0 0 0 1px #e2e8f0;
+        }
+        .take-service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .order-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .order-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .order-tab.active {
+            background-color: #4299e1;
+            color: #fff;
+        }
+        .order-list {
+            gap: 15px;
+        }
+        .order-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            width: 100%;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .order-type {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background-color: #e8f4f8;
+            color: #4299e1;
+        }
+        .order-status {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .order-body {
+            margin-bottom: 10px;
+        }
+        .order-label {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+        .order-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        .order-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .order-btn-primary {
+            background-color: #4299e1;
+            color: #fff;
+        }
+        .order-btn-secondary {
+            background-color: #94a3b8;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部导航（与首页一致） -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand text-primary" href="/index.html">校园车辆管理系统</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link text-dark" href="/index.html">首页</a></li>
+                    <li class="nav-item"><a class="nav-link text-dark" href="/carRent.html">租车</a></li>
+                    <li class="nav-item"><a class="nav-link active text-primary" href="/forum.html">论坛</a></li>
+                    <li class="nav-item"><a class="nav-link text-dark" href="/blacklist.html">黑名单</a></li>
+                </ul>
+                <!-- 个人中心下拉框 -->
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-primary" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            个人中心
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" id="userMenu">
+                            <li><a class="dropdown-item" href="/login.html">请先登录</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主体内容（论坛头部+分类标签+帖子列表） -->
+    <div class="container">
+        <!-- 论坛头部（标题+发布按钮） -->
+        <div class="forum-header">
+            <h4 class="text-dark">校园互助论坛</h4>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" id="myTakeServiceBtn">
+                    我的帖子
+                </button>
+                <button class="btn btn-publish" id="publishPostBtn" data-bs-toggle="modal" data-bs-target="#publishModal">
+                    发布互助帖
+                </button>
+            </div>
+        </div>
+
+        <!-- 分类标签 -->
+        <div class="tag-container">
+            <button class="tag active" data-tag="all">全部</button>
+            <button class="tag" data-tag="express">代拿快递</button>
+            <button class="tag" data-tag="takeaway">代拿外卖</button>
+            <button class="tag" data-tag="carShare">求合租车</button>
+            <button class="tag" data-tag="experience">经验分享</button>
+        </div>
+
+        <!-- 帖子列表（网格布局） -->
+        <div class="post-list d-grid" id="postListContainer"></div>
+
+        <!-- 我的帖子管理区 -->
+        <section class="take-service-section" id="takeServiceSection">
+            <div class="take-service-header">
+                <div>
+                    <h5>我的帖子管理中心</h5>
+                    <p class="text-muted mb-0">在这里查看和管理你发布或接单的帖子</p>
+                </div>
+                <button class="btn btn-primary" id="refreshTakeServiceBtn">刷新数据</button>
+            </div>
+
+            <div class="order-tabs">
+                <button class="order-tab active" id="takePublishTab">我发布的代拿单</button>
+                <button class="order-tab" id="takeAcceptTab">我接单的代拿单</button>
+                <button class="order-tab" id="otherPostsTab">其他帖子</button>
+            </div>
+
+            <div class="order-list d-grid" id="takePublishList"></div>
+            <div class="order-list d-grid d-none" id="takeAcceptList"></div>
+            <div class="order-list d-grid d-none" id="otherPostsList"></div>
+        </section>
+    </div>
+
+    <!-- 发布帖子模态框 -->
+    <div class="modal fade" id="publishModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">发布互助帖</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body d-grid">
+                    <form id="publishPostForm">
+                        <!-- 帖子类型 -->
+                        <div class="form-group">
+                            <label for="postType" class="form-label">帖子类型 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="postType" required>
+                                <option value="">请选择类型</option>
+                                <option value="express">代拿快递</option>
+                                <option value="takeaway">代拿外卖</option>
+                                <option value="carShare">求合租车</option>
+                                <option value="experience">经验分享</option>
+                            </select>
+                        </div>
+
+                        <!-- 帖子标题 -->
+                        <div class="form-group">
+                            <label for="postTitle" class="form-label">标题 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="postTitle" placeholder="请输入帖子标题（如：代拿韵达快递到枫林苑）" required>
+                        </div>
+
+                        <!-- 帖子详情（不同类型显示不同字段） -->
+                        <div id="postDetailFields">
+                            <!-- 代拿快递字段（默认隐藏，选择类型后显示） -->
+                            <div class="post-detail express-fields d-none">
+                                <div class="form-group">
+                                    <label for="expressLocation" class="form-label">取件地点 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="expressLocation" placeholder="如：东门韵达快递站">
+                                </div>
+                                <div class="form-group">
+                                    <label for="expressDestination" class="form-label">送达地点 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="expressDestination" placeholder="如：枫林苑3栋512">
+                                </div>
+                                <div class="form-group">
+                                    <label for="expressReward" class="form-label">赏金（元） <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="expressReward" min="1" max="20" placeholder="1-20元">
+                                </div>
+                                <div class="form-group">
+                                    <label for="expressDeadline" class="form-label">截止时间 <span class="text-danger">*</span></label>
+                                    <input type="datetime-local" class="form-control" id="expressDeadline">
+                                </div>
+                            </div>
+
+                            <!-- 代拿外卖字段（默认隐藏） -->
+                            <div class="post-detail takeaway-fields d-none">
+                                <div class="form-group">
+                                    <label for="takeawayLocation" class="form-label">取餐地点 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="takeawayLocation" placeholder="如：西门美团外卖柜">
+                                </div>
+                                <div class="form-group">
+                                    <label for="takeawayDestination" class="form-label">送达地点 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="takeawayDestination" placeholder="如：北区宿舍2栋">
+                                </div>
+                                <div class="form-group">
+                                    <label for="takeawayReward" class="form-label">赏金（元） <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="takeawayReward" min="1" max="20" placeholder="1-20元">
+                                </div>
+                                <div class="form-group">
+                                    <label for="takeawayDeadline" class="form-label">截止时间 <span class="text-danger">*</span></label>
+                                    <input type="datetime-local" class="form-control" id="takeawayDeadline">
+                                </div>
+                            </div>
+
+                            <!-- 求合租车字段（默认隐藏） -->
+                            <div class="post-detail carShare-fields d-none">
+                                <div class="form-group">
+                                    <label for="carShareRoute" class="form-label">出行路线 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="carShareRoute" placeholder="如：学校→市中心医院">
+                                </div>
+                                <div class="form-group">
+                                    <label for="carShareTime" class="form-label">出行时间 <span class="text-danger">*</span></label>
+                                    <input type="datetime-local" class="form-control" id="carShareTime">
+                                </div>
+                                <div class="form-group">
+                                    <label for="carSharePerson" class="form-label">可拼人数 <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="carSharePerson" min="1" max="3" placeholder="1-3人">
+                                </div>
+                                <div class="form-group">
+                                    <label for="carShareDesc" class="form-label">备注</label>
+                                    <input type="text" class="form-control" id="carShareDesc" placeholder="如：希望同行人不吸烟">
+                                </div>
+                            </div>
+
+                            <!-- 经验分享字段（默认隐藏） -->
+                            <div class="post-detail experience-fields d-none">
+                                <div class="form-group">
+                                    <label for="experienceContent" class="form-label">分享内容 <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="experienceContent" rows="4" placeholder="如：校园内电动车充电点推荐、租车避坑指南等"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 帖子备注（通用） -->
+                        <div class="form-group">
+                            <label for="postRemark" class="form-label">备注（可选）</label>
+                            <input type="text" class="form-control" id="postRemark" placeholder="补充说明，如：快递较重需帮忙扛上楼">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="submitPostBtn">提交审核</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 代拿服务相关模态框 -->
+    <div class="modal fade" id="takeAcceptConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">确认接单</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="takeConfirmOrderId">
+                    <p>您收到了 <span id="takeAcceptUserName" class="text-primary fw-bold"></span> 的接单申请，是否确认对方接单？</p>
+                    <p class="text-muted">确认后将向对方展示您的联系方式</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="takeConfirmAcceptBtn">确认接单</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="takeVoucherUploadModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">上传取件凭证</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="takeUploadOrderId">
+                    <p>请上传取件码照片或取件凭证</p>
+                    <label class="upload-container d-block" for="takeVoucherInput">
+                        <div class="upload-icon"><i class="bi bi-cloud-upload"></i></div>
+                        <div class="upload-text">点击上传照片（支持JPG/PNG）</div>
+                        <input type="file" id="takeVoucherInput" accept="image/jpeg,image/png">
+                    </label>
+                    <div id="takeVoucherPreview" class="d-none mt-3">
+                        <img id="takePreviewImg" src="" class="img-fluid rounded" style="max-height:200px;" alt="凭证预览">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="takeSubmitVoucherBtn" disabled>提交凭证</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="takeCompleteConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">确认送达</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="takeCompleteOrderId">
+                    <p>已收到物品吗？确认后系统将释放赏金给接单者。</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="takeConfirmCompleteBtn">确认送达</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 接单详情模态框 -->
+    <div class="modal fade" id="acceptDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">接单详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="acceptModalPostId">
+                    <div class="mb-3">
+                        <h6 class="text-primary">帖子信息</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>标题：</strong><span id="acceptPostTitle"></span></p>
+                                <p><strong>类型：</strong><span id="acceptPostType"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>赏金：</strong><span id="acceptPostReward" class="text-danger"></span></p>
+                                <p><strong>截止时间：</strong><span id="acceptPostDeadline"></span></p>
+                            </div>
+                        </div>
+                        <p><strong>取件地点：</strong><span id="acceptPostPickup"></span></p>
+                        <p><strong>送达地点：</strong><span id="acceptPostDeliver"></span></p>
+                        <p><strong>详细说明：</strong><span id="acceptPostContent"></span></p>
+                        <p class="text-muted" id="acceptPostRemark"></p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-primary">发帖人联系方式</h6>
+                        <div class="alert alert-info">
+                            <p><strong>姓名：</strong><span id="acceptAuthorName"></span></p>
+                            <p><strong>学号：</strong><span id="acceptAuthorStudentId"></span></p>
+                            <p class="mb-0"><strong>电话：</strong><span id="acceptAuthorPhone" class="text-danger fw-bold"></span></p>
+                        </div>
+                        <p class="text-muted small">接单后请与发帖人联系确认详情</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="confirmAcceptBtn">确认接单</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // 1. 验证登录状态（未登录无法发布帖子）
+            const token = localStorage.getItem("token");
+            const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+            const publishBtn = document.getElementById("publishPostBtn");
+            const myTakeServiceBtn = document.getElementById("myTakeServiceBtn");
+            const submitPostBtn = document.getElementById("submitPostBtn");
+
+            // 2. 初始化个人中心菜单
+            initUserMenu();
+            // 3. 绑定分类标签切换事件
+            bindTagSwitch();
+            // 4. 绑定帖子类型切换事件（控制详情字段显示）
+            bindPostTypeSwitch();
+            // 5. 绑定发布帖子事件
+            bindPublishPost();
+            // 6. 初始化代拿服务模块
+            initTakeServiceModule();
+            // 7. 加载帖子列表数据
+            loadPostList("all");
+
+            // 未登录时禁用发布功能
+            if (!token || !userInfo) {
+                publishBtn.disabled = true;
+                publishBtn.textContent = "登录后可发布";
+
+                publishBtn.style.backgroundColor = "#94a3b8";
+                // 点击提示登录
+                publishBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    alert("请先登录后再发布帖子");
+                    window.location.href = "/login.html";
+                });
+                myTakeServiceBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    alert("请先登录后查看代拿服务");
+                    window.location.href = "/login.html";
+                });
+            } else {
+                myTakeServiceBtn.addEventListener("click", () => {
+                    document.getElementById("takeServiceSection").scrollIntoView({ behavior: "smooth" });
+                });
+            }
+        });
+
+        // 初始化个人中心菜单（与首页逻辑一致）
+        function initUserMenu() {
+            const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+            const menuElement = document.getElementById("userMenu");
+            if (!userInfo) return;
+
+            menuElement.innerHTML = "";
+            if (userInfo.role === "user") {
+                menuElement.innerHTML = `
+                    <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+                    <li><a class="dropdown-item" href="/rent.html">车辆发布</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
+                `;
+            } else if (userInfo.role === "admin") {
+                menuElement.innerHTML = `
+                    <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+                    <li><a class="dropdown-item" href="/admin.html">管理员后台</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
+                `;
+            }
+
+            // 退出登录事件
+            document.getElementById("logoutBtn")?.addEventListener("click", () => {
+                if (confirm("确定要退出登录吗？")) {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("userInfo");
+                    window.location.href = "/login.html";
+                }
+            });
+        }
+
+        // 加载帖子列表数据（从数据库获取）
+        async function loadPostList(tag) {
+            const postListContainer = document.getElementById("postListContainer");
+            postListContainer.innerHTML = "<p class='text-center'>加载中...</p>";
+
+            try {
+                const type = tag === "all" ? "all" : tag;
+                const res = await fetch(`/api/posts?type=${type}`);
+
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ msg: '获取帖子失败' }));
+                    throw new Error(errorData.msg || '获取帖子失败');
+                }
+
+                const posts = await res.json();
+
+                postListContainer.innerHTML = "";
+
+                if (posts.length === 0) {
+                    postListContainer.innerHTML = `
+                        <div class="text-center py-10">
+                            <p class="text-muted">暂无${getTagName(tag)}相关帖子，快来发布第一个吧！</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // 生成帖子卡片
+                posts.forEach(post => {
+                    const postCard = document.createElement("div");
+                    postCard.className = "post-card";
+
+                    // 格式化时间
+                    const postTime = post.created_at ? new Date(post.created_at).toLocaleString('zh-CN') : '未知时间';
+
+                    // 根据类型确定标签
+                    let postTypeTag = '经验分享';
+                    if (post.type === 'daigou_express') postTypeTag = '代拿快递';
+                    else if (post.type === 'daigou_food') postTypeTag = '代拿外卖';
+                    else if (post.type === 'share') postTypeTag = '求合租车';
+
+                    // 格式化内容描述
+                    const desc = post.content || (post.pickup_location && post.deliver_location
+                        ? `${post.pickup_location} → ${post.deliver_location}`
+                        : '无详细描述');
+
+                    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "null");
+                    const canAccept = userInfo && userInfo.user_id !== post.user_id && (post.type === 'daigou_express' || post.type === 'daigou_food');
+
+                    postCard.innerHTML = `
+                        <div class="post-header">
+                            <span class="post-tag">${postTypeTag}</span>
+                            <span class="post-time">${postTime}</span>
+                        </div>
+                        <div class="post-content">
+                            <div class="post-title">${post.title}</div>
+                            <div class="post-desc">${desc}</div>
+                        </div>
+                        <div class="post-footer">
+                            <div class="post-author">发布人：${post.author_name || post.author_student_id || '未知'}</div>
+                            <div class="post-actions">
+                                <div class="action-item">
+                                    <i class="bi bi-hand-holding-dollar"></i>
+                                    <span>${post.reward ? post.reward + '元' : "无"}</span>
+                                </div>
+                                ${canAccept ? `
+                                    <button class="btn btn-sm btn-primary accept-post-btn" data-post-id="${post.post_id}">
+                                        接单
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    postListContainer.appendChild(postCard);
+                });
+
+                // 绑定接单按钮事件
+                document.querySelectorAll('.accept-post-btn').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const postId = this.dataset.postId;
+                        if (!confirm('确定要接这个单吗？')) return;
+
+                        try {
+                            const user_id = localStorage.getItem('user_id');
+                            if (!user_id) {
+                                alert('请先登录');
+                                window.location.href = '/login.html';
+                                return;
+                            }
+
+                            const res = await fetch('/api/posts/accept', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + user_id
+                                },
+                                body: JSON.stringify({ post_id: postId })
+                            });
+                            const result = await res.json();
+
+                            if (res.ok) {
+                                alert('接单成功！等待发布者确认');
+                                loadPostList(tag);
+                            } else {
+                                alert(result.msg || '接单失败');
+                            }
+                        } catch (error) {
+                            console.error('接单失败:', error);
+                            alert('接单失败：' + (error.message || '请检查网络连接'));
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('加载帖子失败:', error);
+                postListContainer.innerHTML = `
+                    <div class="text-center py-10">
+                        <p class="text-danger">加载帖子失败：${error.message || '请稍后重试'}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 绑定分类标签切换事件
+        function bindTagSwitch() {
+            const tags = document.querySelectorAll(".tag");
+            tags.forEach(tag => {
+                tag.addEventListener("click", () => {
+                    // 切换活跃状态
+                    tags.forEach(t => t.classList.remove("active"));
+                    tag.classList.add("active");
+                    // 加载对应标签的帖子
+                    const tagValue = tag.dataset.tag;
+                    loadPostList(tagValue);
+                });
+            });
+        }
+
+        // 绑定帖子类型切换事件（显示对应详情字段）
+        function bindPostTypeSwitch() {
+            const postTypeSelect = document.getElementById("postType");
+            const allDetailFields = document.querySelectorAll(".post-detail");
+
+            postTypeSelect.addEventListener("change", () => {
+                const selectedType = postTypeSelect.value;
+                // 隐藏所有详情字段
+                allDetailFields.forEach(field => field.classList.add("d-none"));
+                // 显示选中类型的详情字段
+                if (selectedType) {
+                    document.querySelector(`.${selectedType}-fields`).classList.remove("d-none");
+                }
+            });
+        }
+
+        // 绑定发布帖子事件
+        function bindPublishPost() {
+            const submitPostBtn = document.getElementById("submitPostBtn");
+            const publishModalElement = document.getElementById("publishModal");
+            const publishModal = bootstrap.Modal.getOrCreateInstance(publishModalElement);
+
+            submitPostBtn.addEventListener("click", async () => {
+                const postType = document.getElementById("postType").value;
+                const postTitle = document.getElementById("postTitle").value;
+                const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+                const token = localStorage.getItem("token");
+                let isFormValid = true;
+                let postData = {
+                    type: '',
+                    title: postTitle,
+                    content: '',
+                    reward: 0,
+                    pickup_location: null,
+                    deliver_location: null,
+                    deadline: null,
+                    route: null,
+                    share_time: null,
+                    share_person: null,
+                    remark: null
+                };
+
+                // 基础校验
+                if (!postType || !postTitle) {
+                    alert("请填写帖子类型和标题");
+                    return;
+                }
+
+                // 按类型校验必填字段并构建数据
+                switch (postType) {
+                    case "express":
+                        postData.type = 'daigou_express';
+                        const expressLoc = document.getElementById("expressLocation").value;
+                        const expressDest = document.getElementById("expressDestination").value;
+                        const expressReward = document.getElementById("expressReward").value;
+                        const expressDeadline = document.getElementById("expressDeadline").value;
+                        if (!expressLoc || !expressDest || !expressReward || !expressDeadline) {
+                            alert("请填写代拿快递的所有必填字段");
+                            isFormValid = false;
+                        } else if (new Date(expressDeadline) < new Date()) {
+                            alert("截止时间不能早于当前时间");
+                            isFormValid = false;
+                        } else {
+                            const postRemark = document.getElementById("postRemark").value;
+                            postData.pickup_location = expressLoc;
+                            postData.deliver_location = expressDest;
+                            postData.reward = parseFloat(expressReward);
+                            postData.deadline = expressDeadline;
+                            postData.remark = postRemark || null;
+                            postData.content = `代拿快递：${expressLoc} → ${expressDest}${postRemark ? '，备注：' + postRemark : ''}`;
+                        }
+                        break;
+                    case "takeaway":
+                        postData.type = 'daigou_food';
+                        const takeawayLoc = document.getElementById("takeawayLocation").value;
+                        const takeawayDest = document.getElementById("takeawayDestination").value;
+                        const takeawayReward = document.getElementById("takeawayReward").value;
+                        const takeawayDeadline = document.getElementById("takeawayDeadline").value;
+                        if (!takeawayLoc || !takeawayDest || !takeawayReward || !takeawayDeadline) {
+                            alert("请填写代拿外卖的所有必填字段");
+                            isFormValid = false;
+                        } else if (new Date(takeawayDeadline) < new Date()) {
+                            alert("截止时间不能早于当前时间");
+                            isFormValid = false;
+                        } else {
+                            const postRemark = document.getElementById("postRemark").value;
+                            postData.pickup_location = takeawayLoc;
+                            postData.deliver_location = takeawayDest;
+                            postData.reward = parseFloat(takeawayReward);
+                            postData.deadline = takeawayDeadline;
+                            postData.remark = postRemark || null;
+                            postData.content = `代拿外卖：${takeawayLoc} → ${takeawayDest}${postRemark ? '，备注：' + postRemark : ''}`;
+                        }
+                        break;
+                    case "carShare":
+                        postData.type = 'share';
+                        const carShareRoute = document.getElementById("carShareRoute").value;
+                        const carShareTime = document.getElementById("carShareTime").value;
+                        const carSharePerson = document.getElementById("carSharePerson").value;
+                        const carShareDesc = document.getElementById("carShareDesc").value;
+                        if (!carShareRoute || !carShareTime || !carSharePerson) {
+                            alert("请填写求合租车的所有必填字段");
+                            isFormValid = false;
+                        } else if (new Date(carShareTime) < new Date()) {
+                            alert("出行时间不能早于当前时间");
+                            isFormValid = false;
+                        } else {
+                            postData.route = carShareRoute;
+                            postData.share_time = carShareTime;
+                            postData.share_person = parseInt(carSharePerson);
+                            postData.remark = carShareDesc || null;
+                            postData.content = `出行路线：${carShareRoute}，出行时间：${carShareTime}，可拼人数：${carSharePerson}${carShareDesc ? '，备注：' + carShareDesc : ''}`;
+                            postData.deadline = carShareTime;
+                        }
+                        break;
+                    case "experience":
+                        postData.type = 'share';
+                        const experienceContent = document.getElementById("experienceContent").value;
+                        const postRemark = document.getElementById("postRemark").value;
+                        if (!experienceContent) {
+                            alert("请填写经验分享内容");
+                            isFormValid = false;
+                        } else {
+                            postData.content = experienceContent;
+                            postData.remark = postRemark || null;
+                        }
+                        break;
+                }
+
+                if (!isFormValid) return;
+
+                // 调用后端接口提交
+                try {
+                    const user_id = localStorage.getItem('user_id');
+                    if (!user_id) {
+                        alert('请先登录');
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                    
+                    const res = await fetch('/api/posts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + user_id
+                        },
+                        body: JSON.stringify(postData)
+                    });
+                    const result = await res.json();
+                    
+                    if (res.ok) {
+                        alert(`帖子发布成功！\n类型：${getTagName(postType)}\n标题：${postTitle}\n管理员将在5分钟内审核`);
+                        publishModal.hide();
+                        document.getElementById("publishPostForm").reset();
+                        // 重置所有详情字段显示
+                        document.querySelectorAll(".post-detail").forEach(field => field.classList.add("d-none"));
+                        loadPostList("all");
+                    } else {
+                        alert(result.msg || '发布失败，请稍后重试');
+                    }
+                } catch (error) {
+                    console.error('发布帖子失败:', error);
+                    alert('发布失败：' + (error.message || '请检查网络连接'));
+                }
+            });
+        }
+
+        // 工具函数：获取标签名称（英文转中文）
+        function getTagName(tag) {
+            const tagMap = {
+                "all": "全部",
+                "express": "代拿快递",
+                "takeaway": "代拿外卖",
+                "carShare": "求合租车",
+                "experience": "经验分享"
+            };
+            return tagMap[tag] || tag;
+        }
+
+        // 初始化代拿服务模块
+        function initTakeServiceModule() {
+            const token = localStorage.getItem("token");
+            const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+            
+            if (!token || !userInfo) {
+                document.getElementById("takeServiceSection").style.display = "none";
+                return;
+            }
+
+            // 绑定标签切换
+            document.getElementById("takePublishTab").addEventListener("click", () => {
+                document.getElementById("takePublishTab").classList.add("active");
+                document.getElementById("takeAcceptTab").classList.remove("active");
+                document.getElementById("otherPostsTab").classList.remove("active");
+                document.getElementById("takePublishList").classList.remove("d-none");
+                document.getElementById("takeAcceptList").classList.add("d-none");
+                document.getElementById("otherPostsList").classList.add("d-none");
+                loadMyPublishedTakePosts();
+            });
+
+            document.getElementById("takeAcceptTab").addEventListener("click", () => {
+                document.getElementById("takeAcceptTab").classList.add("active");
+                document.getElementById("takePublishTab").classList.remove("active");
+                document.getElementById("otherPostsTab").classList.remove("active");
+                document.getElementById("takeAcceptList").classList.remove("d-none");
+                document.getElementById("takePublishList").classList.add("d-none");
+                document.getElementById("otherPostsList").classList.add("d-none");
+                loadMyAcceptedTakePosts();
+            });
+
+            document.getElementById("otherPostsTab").addEventListener("click", () => {
+                document.getElementById("otherPostsTab").classList.add("active");
+                document.getElementById("takePublishTab").classList.remove("active");
+                document.getElementById("takeAcceptTab").classList.remove("active");
+                document.getElementById("otherPostsList").classList.remove("d-none");
+                document.getElementById("takePublishList").classList.add("d-none");
+                document.getElementById("takeAcceptList").classList.add("d-none");
+                loadOtherPosts();
+            });
+
+            // 绑定刷新按钮
+            document.getElementById("refreshTakeServiceBtn").addEventListener("click", () => {
+                const activeTab = document.querySelector(".order-tab.active").id;
+                if (activeTab === "takePublishTab") {
+                    loadMyPublishedTakePosts();
+                } else if (activeTab === "takeAcceptTab") {
+                    loadMyAcceptedTakePosts();
+                } else if (activeTab === "otherPostsTab") {
+                    loadOtherPosts();
+                }
+            });
+
+            // 默认加载我发布的代拿单
+            loadMyPublishedTakePosts();
+        }
+
+        // 加载我发布的代拿单
+        async function loadMyPublishedTakePosts() {
+            const user_id = localStorage.getItem('user_id');
+            const container = document.getElementById("takePublishList");
+            container.innerHTML = "<p class='text-center'>加载中...</p>";
+
+            try {
+                const res = await fetch(`/api/posts/my?user_id=${user_id}&type=published`);
+                if (!res.ok) throw new Error('获取数据失败');
+                
+                const posts = await res.json();
+                const takePosts = posts.filter(p => p.type === 'daigou_express' || p.type === 'daigou_food');
+
+                container.innerHTML = "";
+                
+                if (takePosts.length === 0) {
+                    container.innerHTML = "<p class='text-muted text-center'>暂无发布的代拿单</p>";
+                    return;
+                }
+
+                for (const post of takePosts) {
+                    // 获取接单列表
+                    let accepts = [];
+                    try {
+                        const acceptRes = await fetch(`/api/posts/${post.post_id}/accepts`, {
+                            headers: { 'Authorization': 'Bearer ' + user_id }
+                        });
+                        if (acceptRes.ok) {
+                            accepts = await acceptRes.json();
+                        }
+                    } catch (e) {
+                        console.error('获取接单列表失败', e);
+                    }
+
+                    const orderCard = document.createElement("div");
+                    orderCard.className = "order-card";
+                    
+                    const typeText = post.type === 'daigou_express' ? '代拿快递' : '代拿外卖';
+                    const statusText = post.is_verified ? '已审核' : '待审核';
+                    
+                    orderCard.innerHTML = `
+                        <div class="order-header">
+                            <span class="order-type">${typeText}</span>
+                            <span class="order-status">${statusText}</span>
+                        </div>
+                        <div class="order-body">
+                            <div class="order-label">标题</div>
+                            <div class="order-value">${post.title}</div>
+                            <div class="order-label mt-2">取送地点</div>
+                            <div class="order-value">${post.pickup_location} → ${post.deliver_location}</div>
+                            <div class="order-label mt-2">赏金</div>
+                            <div class="order-value text-danger">¥${post.reward || 0}</div>
+                            ${accepts.length > 0 ? `
+                                <div class="order-label mt-2">接单情况</div>
+                                <div class="mt-2">
+                                    ${accepts.map(acc => {
+                                        const accStatusMap = {
+                                            'pending': '待确认',
+                                            'accepted': '已接单',
+                                            'completed': '已完成',
+                                            'cancelled': '已取消'
+                                        };
+                                        return `
+                                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                                                <div>
+                                                    <strong>${acc.accepter_name}</strong> (${acc.accepter_student_id})
+                                                    <br><small class="text-muted">${accStatusMap[acc.status]}</small>
+                                                </div>
+                                                <div>
+                                                    ${acc.status === 'pending' ? `
+                                                        <button class="btn btn-sm btn-success confirm-accept-btn" data-accept-id="${acc.accept_id}" data-accepter-name="${acc.accepter_name}">
+                                                            确认接单
+                                                        </button>
+                                                    ` : ''}
+                                                    ${acc.status === 'accepted' ? `
+                                                        <button class="btn btn-sm btn-primary complete-accept-btn" data-accept-id="${acc.accept_id}">
+                                                            确认完成
+                                                        </button>
+                                                    ` : ''}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : '<p class="text-muted mt-2">暂无人接单</p>'}
+                        </div>
+                        <div class="order-footer">
+                            <span>发布于 ${new Date(post.created_at).toLocaleString('zh-CN')}</span>
+                        </div>
+                    `;
+                    container.appendChild(orderCard);
+                }
+
+                // 绑定确认接单按钮
+                document.querySelectorAll('.confirm-accept-btn').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const acceptId = this.dataset.acceptId;
+                        const accepterName = this.dataset.accepterName;
+                        
+                        if (!confirm(`确认让 ${accepterName} 接单吗？`)) return;
+
+                        try {
+                            const res = await fetch('/api/posts/confirm-accept', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + user_id
+                                },
+                                body: JSON.stringify({ accept_id: acceptId })
+                            });
+                            const result = await res.json();
+
+                            if (res.ok) {
+                                alert('确认成功');
+                                loadMyPublishedTakePosts();
+                            } else {
+                                alert(result.msg || '确认失败');
+                            }
+                        } catch (error) {
+                            console.error('确认失败', error);
+                            alert('确认失败：' + error.message);
+                        }
+                    });
+                });
+
+                // 绑定完成按钮
+                document.querySelectorAll('.complete-accept-btn').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const acceptId = this.dataset.acceptId;
+                        
+                        if (!confirm('确认已收到物品吗？完成后将无法撤销')) return;
+
+                        try {
+                            const res = await fetch('/api/posts/complete-accept', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + user_id
+                                },
+                                body: JSON.stringify({ accept_id: acceptId })
+                            });
+                            const result = await res.json();
+
+                            if (res.ok) {
+                                alert('订单已完成');
+                                loadMyPublishedTakePosts();
+                            } else {
+                                alert(result.msg || '操作失败');
+                            }
+                        } catch (error) {
+                            console.error('操作失败', error);
+                            alert('操作失败：' + error.message);
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('加载失败', error);
+                container.innerHTML = "<p class='text-danger text-center'>加载失败：" + error.message + "</p>";
+            }
+        }
+
+        // 加载我接单的代拿单
+        async function loadMyAcceptedTakePosts() {
+            const user_id = localStorage.getItem('user_id');
+            const container = document.getElementById("takeAcceptList");
+            container.innerHTML = "<p class='text-center'>加载中...</p>";
+
+            try {
+                const res = await fetch(`/api/posts/my?user_id=${user_id}&type=accepted`);
+                if (!res.ok) throw new Error('获取数据失败');
+                
+                const accepts = await res.json();
+                const takeAccepts = accepts.filter(a => a.type === 'daigou_express' || a.type === 'daigou_food');
+
+                container.innerHTML = "";
+                
+                if (takeAccepts.length === 0) {
+                    container.innerHTML = "<p class='text-muted text-center'>暂无接单记录</p>";
+                    return;
+                }
+
+                takeAccepts.forEach(accept => {
+                    const orderCard = document.createElement("div");
+                    orderCard.className = "order-card";
+                    
+                    const typeText = accept.type === 'daigou_express' ? '代拿快递' : '代拿外卖';
+                    const statusMap = {
+                        'pending': '待确认',
+                        'accepted': '已接单',
+                        'completed': '已完成',
+                        'cancelled': '已取消'
+                    };
+                    
+                    orderCard.innerHTML = `
+                        <div class="order-header">
+                            <span class="order-type">${typeText}</span>
+                            <span class="order-status">${statusMap[accept.accept_status]}</span>
+                        </div>
+                        <div class="order-body">
+                            <div class="order-label">标题</div>
+                            <div class="order-value">${accept.title}</div>
+                            <div class="order-label mt-2">取送地点</div>
+                            <div class="order-value">${accept.pickup_location} → ${accept.deliver_location}</div>
+                            <div class="order-label mt-2">赏金</div>
+                            <div class="order-value text-danger">¥${accept.reward || 0}</div>
+                        </div>
+                        <div class="order-footer">
+                            <span>接单于 ${new Date(accept.accept_time).toLocaleString('zh-CN')}</span>
+                            ${accept.accept_status === 'pending' || accept.accept_status === 'accepted' ? `
+                                <button class="btn btn-sm btn-secondary cancel-accept-btn" data-accept-id="${accept.accept_id}">
+                                    取消接单
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                    container.appendChild(orderCard);
+                });
+
+                // 绑定取消按钮
+                document.querySelectorAll('.cancel-accept-btn').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const acceptId = this.dataset.acceptId;
+                        
+                        if (!confirm('确认取消接单吗？')) return;
+
+                        try {
+                            const res = await fetch('/api/posts/cancel-accept', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + user_id
+                                },
+                                body: JSON.stringify({ accept_id: acceptId })
+                            });
+                            const result = await res.json();
+
+                            if (res.ok) {
+                                alert('已取消接单');
+                                loadMyAcceptedTakePosts();
+                            } else {
+                                alert(result.msg || '取消失败');
+                            }
+                        } catch (error) {
+                            console.error('取消失败', error);
+                            alert('取消失败：' + error.message);
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('加载失败', error);
+                container.innerHTML = "<p class='text-danger text-center'>加载失败：" + error.message + "</p>";
+            }
+        }
+
+        // 加载其他类型的帖子（求合租车、经验分享）
+        async function loadOtherPosts() {
+            const user_id = localStorage.getItem('user_id');
+            const container = document.getElementById("otherPostsList");
+            container.innerHTML = "<p class='text-center'>加载中...</p>";
+            
+            try {
+                const res = await fetch(`/api/posts/my?user_id=${user_id}&type=published`);
+                if (!res.ok) throw new Error('获取数据失败');
+                
+                const posts = await res.json();
+                // 只显示share类型的帖子（求合租车和经验分享）
+                const otherPosts = posts.filter(p => p.type === 'share');
+
+                container.innerHTML = "";
+                
+                if (otherPosts.length === 0) {
+                    container.innerHTML = "<p class='text-muted text-center'>暂无求合租车或经验分享帖子</p>";
+                    return;
+                }
+
+                otherPosts.forEach(post => {
+                    const orderCard = document.createElement("div");
+                    orderCard.className = "order-card";
+                    
+                    // 根据是否有route字段判断是求合租车还是经验分享
+                    const typeText = post.route ? '求合租车' : '经验分享';
+                    const statusText = post.is_verified ? '已审核' : '待审核';
+                    
+                    orderCard.innerHTML = `
+                        <div class="order-header">
+                            <span class="order-type">${typeText}</span>
+                            <span class="order-status">${statusText}</span>
+                        </div>
+                        <div class="order-body">
+                            <div class="order-label">标题</div>
+                            <div class="order-value">${post.title}</div>
+                            ${post.route ? `
+                                <div class="order-label mt-2">出行路线</div>
+                                <div class="order-value">${post.route}</div>
+                                <div class="order-label mt-2">出行时间</div>
+                                <div class="order-value">${post.share_time ? new Date(post.share_time).toLocaleString('zh-CN') : '未设置'}</div>
+                                <div class="order-label mt-2">可拼人数</div>
+                                <div class="order-value">${post.share_person || 0}人</div>
+                            ` : `
+                                <div class="order-label mt-2">分享内容</div>
+                                <div class="order-value">${post.content}</div>
+                            `}
+                            ${post.remark ? `
+                                <div class="order-label mt-2">备注</div>
+                                <div class="order-value text-muted">${post.remark}</div>
+                            ` : ''}
+                        </div>
+                        <div class="order-footer">
+                            <span>发布于 ${new Date(post.created_at).toLocaleString('zh-CN')}</span>
+                            <button class="btn btn-sm btn-danger delete-post-btn" data-post-id="${post.post_id}" data-title="${post.title}">
+                                删除帖子
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(orderCard);
+                });
+
+                // 绑定删除按钮
+                document.querySelectorAll('.delete-post-btn').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const postId = this.dataset.postId;
+                        const title = this.dataset.title;
+                        const currentUserId = localStorage.getItem('user_id');
+                        
+                        // 调试日志
+                        console.log('准备删除帖子，postId:', postId, 'userId:', currentUserId);
+                        
+                        if (!postId) {
+                            alert('帖子ID无效，无法删除');
+                            return;
+                        }
+                        
+                        if (!currentUserId) {
+                            alert('请先登录');
+                            window.location.href = '/login.html';
+                            return;
+                        }
+                        
+                        if (!confirm(`确认删除帖子"${title}"吗？删除后将无法恢复`)) return;
+
+                        try {
+                            const res = await fetch(`/api/posts/${postId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': 'Bearer ' + currentUserId
+                                }
+                            });
+                            const result = await res.json();
+
+                            if (res.ok) {
+                                alert('帖子已删除');
+                                loadOtherPosts();
+                            } else {
+                                alert(result.msg || '删除失败');
+                            }
+                        } catch (error) {
+                            console.error('删除失败', error);
+                            alert('删除失败：' + error.message);
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('加载失败', error);
+                container.innerHTML = "<p class='text-danger text-center'>加载失败：" + error.message + "</p>";
+            }
+        }
+
+    </script>
+    <!-- 引入Bootstrap图标（用于帖子操作按钮） -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</body>
+</html>

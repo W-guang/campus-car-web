@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>租车 - 校园车辆管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=a49a852abb90dd6856b2d10227220702&plugin=AMap.Geocoder"></script>
+    <style>
+        .navbar-brand {
+            font-size: 1.8rem !important;
+            font-weight: bold;
+            pointer-events: none;
+            cursor: default;
+        }
+        .nav-link {
+            font-size: 1.1rem;
+            margin: 0 8px;
+        }
+        .mode-tabs {
+            border-bottom: 1px solid #e9ecef;
+            margin-bottom: 20px;
+        }
+        .mode-tab {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            font-size: 1.1rem;
+            color: #666;
+            position: relative;
+        }
+        .mode-tab.active {
+            color: #4299e1;
+            font-weight: 500;
+        }
+        .mode-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #4299e1;
+        }
+        #rentMap {
+            width: 100%;
+            height: 60vh;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: block;
+        }
+        .car-list {
+            display: none;
+        }
+        .car-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .car-img {
+            width: 100px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .car-info {
+            flex: 1;
+        }
+        .car-type {
+            font-size: 0.9rem;
+            color: #4299e1;
+            background-color: #e8f4f8;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+        .car-price {
+            font-weight: bold;
+            color: #333;
+        }
+        .car-location {
+            font-size: 0.9rem;
+            color: #666;
+            margin: 5px 0;
+        }
+        .car-owner {
+            font-size: 0.85rem;
+            color: #999;
+        }
+        .modal-header {
+            background-color: #e8f4f8;
+        }
+        .fee-calculator {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .btn-primary {
+            background-color: #4299e1;
+            border-color: #4299e1;
+        }
+        .btn-primary:hover {
+            background-color: #3182ce;
+            border-color: #3182ce;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand text-primary" href="/index.html">校园车辆管理系统</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link text-dark" href="/index.html">首页</a></li>
+                    <li class="nav-item"><a class="nav-link active text-primary" href="/carRent.html">租车</a></li>
+                    <li class="nav-item"><a class="nav-link text-dark" href="/forum.html">论坛</a></li>
+                    <li class="nav-item"><a class="nav-link text-dark" href="/blacklist.html">黑名单</a></li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-primary" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            个人中心
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" id="userMenu">
+                            <li><a class="dropdown-item" href="/login.html">请先登录</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 筛选功能 -->
+        <div class="filter-section mb-3" style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <label class="form-label">车辆类型：</label>
+                    <div>
+                        <label class="me-3"><input type="checkbox" id="filter-ebike" checked> 电动车</label>
+                        <label><input type="checkbox" id="filter-bicycle" checked> 自行车</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">价格范围：</label>
+                    <div class="input-group">
+                        <input type="number" id="min-price" class="form-control" value="0" min="0" step="0.5" placeholder="最低">
+                        <span class="input-group-text">-</span>
+                        <input type="number" id="max-price" class="form-control" value="10" min="0" step="0.5" placeholder="最高">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button onclick="applyFilter()" class="btn btn-primary w-100">筛选</button>
+                </div>
+                <div class="col-md-3">
+                    <button onclick="resetFilter()" class="btn btn-secondary w-100">重置</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mode-tabs">
+            <button class="mode-tab active" id="mapModeBtn">地图模式</button>
+            <button class="mode-tab" id="listModeBtn">列表模式</button>
+        </div>
+
+        <div id="rentMap"></div>
+
+        <div class="car-list" id="carListContainer">
+        </div>
+    </div>
+
+    <!-- 租车Modal -->
+    <div class="modal fade" id="rentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rentModalTitle">租用车辆</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="rentCarId">
+                    <div class="mb-3">
+                        <label class="form-label">车辆信息</label>
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title" id="modalCarType">电动车</h6>
+                                <p class="card-text"><strong>位置：</strong><span id="modalCarLocation">东区宿舍楼下</span></p>
+                                <p class="card-text"><strong>时价：</strong><span id="modalCarPrice">3</span>元/小时</p>
+                                <p class="card-text"><strong>车主：</strong><span id="modalCarOwner">张**（学）</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="rentHours" class="form-label">租用时长（小时）</label>
+                        <input type="number" class="form-control" id="rentHours" min="1" max="6" value="2" required>
+                        <div class="form-text">建议租用1-6小时，超过需重新下单</div>
+                    </div>
+                    <div class="fee-calculator">
+                        <h6 class="mb-2">费用计算</h6>
+                        <p>时价：<span id="calcPrice">3</span>元/小时</p>
+                        <p>时长：<span id="calcHours">2</span>小时</p>
+                        <p class="fw-bold">预计总费用：<span id="calcTotal">6</span>元（线下支付）</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="submitRentBtn">提交订单</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 订单成功Modal - 显示联系信息 -->
+    <div class="modal fade" id="orderSuccessModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">🎉 预订成功</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-success">
+                        <strong>订单已提交！</strong> 车主已收到通知，等待车主确认订单。
+                    </div>
+                    
+                    <h6 class="mb-3">📋 订单信息</h6>
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <p><strong>订单号：</strong><span id="successOrderId">-</span></p>
+                            <p><strong>车辆类型：</strong><span id="successCarType">-</span></p>
+                            <p><strong>取车地点：</strong><span id="successLocation">-</span></p>
+                            <p><strong>租用时长：</strong><span id="successHours">-</span> 小时</p>
+                            <p class="mb-0"><strong>预计费用：</strong><span id="successFee" class="text-danger fs-5">-</span> 元</p>
+                        </div>
+                    </div>
+
+                    <h6 class="mb-3">📞 车主联系方式</h6>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <p><strong>车主姓名：</strong><span id="successOwnerName">-</span></p>
+                            <p class="mb-0"><strong>手机号：</strong><span id="successOwnerPhone" class="text-primary fs-5">-</span></p>
+                            <small class="text-muted">请通过电话或微信联系车主，约定线下交车时间和地点</small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3 mb-0">
+                        <strong>💡 温馨提示：</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>车主确认后，订单状态变为"已确认"</li>
+                            <li>取车后请线下支付费用给车主</li>
+                            <li>使用完毕后，双方确认完成订单</li>
+                            <li>可在"个人中心-我的订单"中查看订单状态</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='/personalInfo.html?tab=orders'">查看我的订单</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let map, markers = [];
+        let allVehicles = []; // 保存所有车辆数据用于筛选
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            const token = localStorage.getItem("token");
+            const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+            if (!token || !userInfo) {
+                alert("请先登录后再租车");
+                window.location.href = "/login.html";
+                return;
+            }
+
+            initUserMenu();
+            // 先加载所有车辆数据
+            fetch('/api/vehicles')
+                .then(r => r.json())
+                .then(vehicles => {
+                    allVehicles = vehicles;
+                    initRentMap();
+                    loadCarList();
+                });
+            bindModeSwitch();
+            bindRentEvents();
+        });
+
+        // 筛选功能
+        function applyFilter() {
+            const ebike = document.getElementById('filter-ebike').checked;
+            const bicycle = document.getElementById('filter-bicycle').checked;
+            const min = parseFloat(document.getElementById('min-price').value) || 0;
+            const max = parseFloat(document.getElementById('max-price').value) || Infinity;
+
+            const filtered = allVehicles.filter(v => {
+                const typeMatch = (ebike && v.type === 'ebike') || (bicycle && v.type === 'bicycle');
+                const priceMatch = v.price_per_hour >= min && v.price_per_hour <= max;
+                return typeMatch && priceMatch;
+            });
+
+            loadVehiclesOnMap(filtered);
+            loadCarList(filtered);
+        }
+
+        // 重置筛选
+        function resetFilter() {
+            document.getElementById('filter-ebike').checked = true;
+            document.getElementById('filter-bicycle').checked = true;
+            document.getElementById('min-price').value = 0;
+            document.getElementById('max-price').value = 10;
+            loadVehiclesOnMap();
+            loadCarList();
+        }
+
+        function initUserMenu() {
+            const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+            const menuElement = document.getElementById("userMenu");
+            if (!userInfo) return;
+
+            menuElement.innerHTML = "";
+            if (userInfo.role === "user") {
+                menuElement.innerHTML = `
+                    <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+                    <li><a class="dropdown-item" href="/rent.html">车辆发布</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
+                `;
+            } else if (userInfo.role === "admin") {
+                menuElement.innerHTML = `
+                    <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+                    <li><a class="dropdown-item" href="/admin.html">管理员后台</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
+                `;
+            }
+
+            document.getElementById("logoutBtn")?.addEventListener("click", () => {
+                if (confirm("确定要退出登录吗？")) {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("userInfo");
+                    window.location.href = "/login.html";
+                }
+            });
+        }
+
+        function initRentMap() {
+            if (typeof AMap === 'undefined') {
+                setTimeout(initRentMap, 500);
+                return;
+            }
+            map = new AMap.Map("rentMap", {
+                zoom: 16,
+                center: [112.58451, 37.79676],
+                resizeEnable: true
+            });
+
+            loadVehiclesOnMap();
+        }
+
+        function loadVehiclesOnMap(vehiclesToShow = null) {
+            if (!map) return;
+            map.clearMap();
+            markers = [];
+
+            const vehicles = vehiclesToShow || allVehicles;
+            vehicles.forEach(v => {
+                const lnglat = v.lng && v.lat ? [parseFloat(v.lng), parseFloat(v.lat)] : [
+                    112.58451 + (Math.random() - 0.5) * 0.01,
+                    37.79676 + (Math.random() - 0.5) * 0.01
+                ];
+
+                const marker = new AMap.Marker({
+                    position: lnglat,
+                    title: v.location_desc,
+                    icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png',
+                    label: { content: `¥${v.price_per_hour}`, direction: 'top' }
+                });
+
+                marker.on('click', () => {
+                    new AMap.InfoWindow({
+                        content: `
+                            <div style="padding:10px;">
+                                <h4>${v.type === 'ebike' ? '电动车' : '自行车'}</h4>
+                                <p><strong>位置：</strong>${v.location_desc}</p>
+                                <p><strong>价格：</strong>¥${v.price_per_hour}/小时</p>
+                                <p><strong>车主：</strong>${v.owner_name}</p>
+                                <button class="btn btn-sm btn-primary w-100 rent-btn" 
+                                        data-id="${v.vehicle_id}" 
+                                        data-type="${v.type === 'ebike' ? '电动车' : '自行车'}" 
+                                        data-location="${v.location_desc}" 
+                                        data-price="${v.price_per_hour}" 
+                                        data-owner="${v.owner_name}">
+                                    立即租用
+                                </button>
+                            </div>
+                        `,
+                        offset: new AMap.Pixel(0, -30)
+                    }).open(map, lnglat);
+                });
+
+                marker.setMap(map);
+                markers.push(marker);
+            });
+        }
+
+        function loadCarList(vehiclesToShow = null) {
+            const vehicles = vehiclesToShow || allVehicles;
+            const listContainer = document.getElementById("carListContainer");
+            listContainer.innerHTML = "";
+
+            if (vehicles.length === 0) {
+                listContainer.innerHTML = '<p class="text-center text-muted">暂无符合条件的车辆</p>';
+                return;
+            }
+
+            vehicles.forEach(v => {
+                const carCard = document.createElement("div");
+                carCard.className = "car-card";
+                carCard.innerHTML = `
+                    <img src="https://cdn-icons-png.flaticon.com/512/2926/2926655.png" class="car-img" alt="${v.type === 'ebike' ? '电动车' : '自行车'}">
+                    <div class="car-info">
+                        <span class="car-type">${v.type === 'ebike' ? '电动车' : '自行车'}</span>
+                        <p class="car-price">${v.price_per_hour}元/小时 · ${v.location_desc}</p>
+                        <p class="car-owner">车主：${v.owner_name}</p>
+                    </div>
+                    <button class="btn btn-primary rent-btn" 
+                            data-id="${v.vehicle_id}" 
+                            data-type="${v.type === 'ebike' ? '电动车' : '自行车'}" 
+                            data-location="${v.location_desc}" 
+                            data-price="${v.price_per_hour}" 
+                            data-owner="${v.owner_name}">
+                        租车
+                    </button>
+                `;
+                listContainer.appendChild(carCard);
+            });
+        }
+
+        function bindModeSwitch() {
+            const mapModeBtn = document.getElementById("mapModeBtn");
+            const listModeBtn = document.getElementById("listModeBtn");
+            const rentMap = document.getElementById("rentMap");
+            const carList = document.getElementById("carListContainer");
+
+            mapModeBtn.addEventListener("click", () => {
+                mapModeBtn.classList.add("active");
+                listModeBtn.classList.remove("active");
+                rentMap.style.display = "block";
+                carList.style.display = "none";
+                if (map) {
+                    setTimeout(() => map.getSize(), 100);
+                }
+            });
+
+            listModeBtn.addEventListener("click", () => {
+                listModeBtn.classList.add("active");
+                mapModeBtn.classList.remove("active");
+                rentMap.style.display = "none";
+                carList.style.display = "block";
+            });
+        }
+
+        function bindRentEvents() {
+            const rentModal = new bootstrap.Modal(document.getElementById("rentModal"));
+            const rentHoursInput = document.getElementById("rentHours");
+            const calcPrice = document.getElementById("calcPrice");
+            const calcHours = document.getElementById("calcHours");
+            const calcTotal = document.getElementById("calcTotal");
+            const submitRentBtn = document.getElementById("submitRentBtn");
+
+            document.addEventListener("click", (e) => {
+                if (e.target.classList.contains("rent-btn")) {
+                    const carId = e.target.dataset.id;
+                    const carType = e.target.dataset.type;
+                    const carLocation = e.target.dataset.location;
+                    const carPrice = e.target.dataset.price;
+                    const carOwner = e.target.dataset.owner;
+
+                    document.getElementById("rentCarId").value = carId;
+                    document.getElementById("modalCarType").textContent = carType;
+                    document.getElementById("modalCarLocation").textContent = carLocation;
+                    document.getElementById("modalCarPrice").textContent = carPrice;
+                    document.getElementById("modalCarOwner").textContent = carOwner;
+                    calcPrice.textContent = carPrice;
+                    calcHours.textContent = rentHoursInput.value;
+                    calcTotal.textContent = (carPrice * rentHoursInput.value).toFixed(1);
+
+                    rentModal.show();
+                }
+            });
+
+            rentHoursInput.addEventListener("input", () => {
+                const hours = rentHoursInput.value;
+                const price = calcPrice.textContent;
+                calcHours.textContent = hours;
+                calcTotal.textContent = (price * hours).toFixed(1);
+            });
+
+            submitRentBtn.addEventListener("click", async () => {
+                const carId = document.getElementById("rentCarId").value;
+                const hours = rentHoursInput.value;
+                const totalFee = calcTotal.textContent;
+                const carType = document.getElementById("modalCarType").textContent;
+                const carLocation = document.getElementById("modalCarLocation").textContent;
+                const user_id = localStorage.getItem('user_id');
+
+                if (!user_id) {
+                    alert('请先登录');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                if (!hours || hours <= 0) {
+                    alert('请输入有效的租用时长');
+                    return;
+                }
+
+                // 禁用按钮防止重复提交
+                submitRentBtn.disabled = true;
+                submitRentBtn.textContent = '提交中...';
+
+                try {
+                    const res = await fetch('/api/orders', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + user_id
+                        },
+                        body: JSON.stringify({
+                            vehicle_id: carId,
+                            hours: parseInt(hours)
+                        })
+                    });
+                    const result = await res.json();
+
+                    if (res.ok) {
+                        // 隐藏租车Modal
+                        rentModal.hide();
+                        
+                        // 填充订单成功Modal的数据
+                        document.getElementById('successOrderId').textContent = result.order_id || '-';
+                        document.getElementById('successCarType').textContent = carType;
+                        document.getElementById('successLocation').textContent = carLocation;
+                        document.getElementById('successHours').textContent = hours;
+                        document.getElementById('successFee').textContent = totalFee;
+                        
+                        // 显示车主信息（加密显示）
+                        if (result.owner_info) {
+                            const ownerName = result.owner_info.name;
+                            const ownerPhone = result.owner_info.phone;
+                            
+                            // 姓名加密：只显示姓
+                            const encryptedName = ownerName.charAt(0) + '*'.repeat(ownerName.length - 1);
+                            document.getElementById('successOwnerName').textContent = encryptedName;
+                            
+                            // 手机号加密：显示前3位和后4位
+                            const encryptedPhone = ownerPhone.substring(0, 3) + '****' + ownerPhone.substring(7);
+                            document.getElementById('successOwnerPhone').textContent = encryptedPhone;
+                        }
+                        
+                        // 显示订单成功Modal
+                        const successModal = new bootstrap.Modal(document.getElementById('orderSuccessModal'));
+                        successModal.show();
+                    } else {
+                        alert(result.msg || '订单创建失败');
+                    }
+                } catch (error) {
+                    console.error('订单创建失败', error);
+                    alert('订单创建失败：' + error.message);
+                } finally {
+                    // 恢复按钮状态
+                    submitRentBtn.disabled = false;
+                    submitRentBtn.textContent = '提交订单';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代拿服务 - 校园车辆管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8fafc;
+        }
+        .redirect-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+            max-width: 520px;
+            text-align: center;
+        }
+        .redirect-card h2 {
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+        .redirect-card p {
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+        .btn-primary {
+            background-color: #4299e1;
+            border-color: #4299e1;
+            padding: 10px 26px;
+        }
+        .btn-secondary {
+            border-radius: 999px;
+            padding: 10px 24px;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                window.location.replace('/forum.html#takeServiceSection');
+            }, 1200);
+        });
+    </script>
+</head>
+<body>
+    <div class="redirect-card">
+        <h2>代拿服务已搬家</h2>
+        <p>代拿功能已整合到“校园互助论坛”，请点击下方按钮或等待自动跳转。</p>
+        <div class="d-flex justify-content-center gap-2">
+            <a class="btn btn-primary" href="/forum.html#takeServiceSection">立即前往</a>
+            <a class="btn btn-secondary" href="/index.html">返回首页</a>
+        </div>
+        <small class="text-muted d-block mt-3">若未自动跳转，请点击“立即前往”。</small>
+    </div>
+</body>
+</html>
+            if (!userInfo) return;
+
+            menuElement.innerHTML = "";
+            if (userInfo.role === "user") {
+                menuElement.innerHTML = `
+                    <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+                    <li><a class="dropdown-item" href="/rent.html">车辆发布</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
+                `;
+            } else if (userInfo.role === "admin") {
+                menuElement.innerHTML = `
+                    <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+                    <li><a class="dropdown-item" href="/admin.html">管理员后台</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
+                `;
+            }
+
+            // 退出登录事件
+            document.getElementById("logoutBtn")?.addEventListener("click", () => {
+                if (confirm("确定要退出登录吗？")) {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("userInfo");
+                    window.location.href = "/login.html";
+                }
+            });
+        }
+
+        // 加载“我发布的代拿单”
+        function loadMyPublishOrders() {
+            const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+            const publishList = document.getElementById("myPublishList");
+            publishList.innerHTML = "";
+
+            // 模拟“我发布的”订单数据（实际需调用后端接口，按当前用户ID筛选）
+            const myPublishOrders = [
+                {
+                    id: 101,
+                    type: "express", // express=快递，takeaway=外卖
+                    status: "pending", // pending=待接单，accepted=已接单，completed=已完成，canceled=已取消
+                    title: "代拿韵达快递到枫林苑3栋",
+                    takeLocation: "东门韵达快递站",
+                    destLocation: "枫林苑3栋512",
+                    reward: "5元",
+                    deadline: "2024-05-20 18:00",
+                    createTime: "2024-05-20 10:30",
+                    accepter: null, // 接单者（未接单为null）
+                    contact: "微信：xiaohong123" // 发布者联系方式（仅已接单时展示）
+                },
+                {
+                    id: 102,
+                    type: "takeaway",
+                    status: "accepted",
+                    title: "代拿西门麦当劳到北区宿舍2栋",
+                    takeLocation: "西门美团外卖柜",
+                    destLocation: "北区宿舍2栋301",
+                    reward: "3元",
+                    deadline: "2024-05-20 12:00",
+                    createTime: "2024-05-20 11:10",
+                    accepter: "小李（学）", // 已接单，显示接单者
+                    contact: "手机号：138****5678"
+                }
+            ];
+
+            if (myPublishOrders.length === 0) {
+                publishList.innerHTML = `
+                    <div class="text-center py-10">
+                        <p class="text-muted">您还没有发布过代拿单，可去论坛发布</p>
+                        <button class="btn btn-primary mt-3" onclick="window.location.href='/forum.html'">去发布</button>
+                    </div>
+                `;
+                return;
+            }
+
+            // 生成订单卡片
+            myPublishOrders.forEach(order => {
+                const orderCard = document.createElement("div");
+                orderCard.className = "order-card";
+                orderCard.innerHTML = `
+                    <div class="order-header">
+                        <span class="order-type">${order.type === "express" ? "代拿快递" : "代拿外卖"}</span>
+                        <span class="order-status status-${order.status}">${getStatusText(order.status)}</span>
+                    </div>
+                    <div class="order-body">
+                        <div class="order-item">
+                            <span class="order-label">订单标题</span>
+                            <span class="order-value">${order.title}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">取件地点</span>
+                            <span class="order-value">${order.takeLocation}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">送达地点</span>
+                            <span class="order-value">${order.destLocation}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">赏金</span>
+                            <span class="order-value">${order.reward}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">截止时间</span>
+                            <span class="order-value">${order.deadline}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">发布时间</span>
+                            <span class="order-value">${order.createTime}</span>
+                        </div>
+                        ${order.status === "accepted" ? `
+                            <div class="order-item">
+                                <span class="order-label">接单者</span>
+                                <span class="order-value">${order.accepter}</span>
+                            </div>
+                            <div class="order-item">
+                                <span class="order-label">您的联系方式</span>
+                                <span class="order-value">${order.contact}</span>
+                            </div>
+                        ` : ""}
+                    </div>
+                    <div class="order-footer">
+                        ${getPublishOrderButtons(order)} <!-- 动态生成按钮 -->
+                    </div>
+                `;
+                publishList.appendChild(orderCard);
+            });
+        }
+
+        // 加载“我接单的代拿单”
+        function loadMyAcceptOrders() {
+            const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+            const acceptList = document.getElementById("myAcceptList");
+            acceptList.innerHTML = "";
+
+            // 模拟“我接单的”订单数据（实际需调用后端接口，按当前用户ID筛选）
+            const myAcceptOrders = [
+                {
+                    id: 201,
+                    type: "express",
+                    status: "accepted", // pending=待接单（接单者看不到），accepted=已接单，completed=已完成
+                    title: "代拿顺丰快递到南区教学楼B栋",
+                    takeLocation: "南门顺丰快递点",
+                    destLocation: "南区教学楼B栋302教室",
+                    reward: "4元",
+                    deadline: "2024-05-20 15:30",
+                    createTime: "2024-05-20 09:45",
+                    publisher: "小张（学）", // 发布者信息
+                    contact: "微信：xiaozhang456" // 发布者联系方式（已接单后可见）
+                },
+                {
+                    id: 202,
+                    type: "takeaway",
+                    status: "completed",
+                    title: "代拿奶茶到东区宿舍5栋",
+                    takeLocation: "东门蜜雪冰城",
+                    destLocation: "东区宿舍5栋204",
+                    reward: "2元",
+                    deadline: "2024-05-19 19:00",
+                    createTime: "2024-05-19 18:20",
+                    publisher: "小王（学）",
+                    contact: "手机号：139****8901"
+                }
+            ];
+
+            if (myAcceptOrders.length === 0) {
+                acceptList.innerHTML = `
+                    <div class="text-center py-10">
+                        <p class="text-muted">您还没有接任何代拿单，可去论坛接单</p>
+                        <button class="btn btn-primary mt-3" onclick="window.location.href='/forum.html'">去接单</button>
+                    </div>
+                `;
+                return;
+            }
+
+            // 生成订单卡片
+            myAcceptOrders.forEach(order => {
+                const orderCard = document.createElement("div");
+                orderCard.className = "order-card";
+                orderCard.innerHTML = `
+                    <div class="order-header">
+                        <span class="order-type">${order.type === "express" ? "代拿快递" : "代拿外卖"}</span>
+                        <span class="order-status status-${order.status}">${getStatusText(order.status)}</span>
+                    </div>
+                    <div class="order-body">
+                        <div class="order-item">
+                            <span class="order-label">订单标题</span>
+                            <span class="order-value">${order.title}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">取件地点</span>
+                            <span class="order-value">${order.takeLocation}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">送达地点</span>
+                            <span class="order-value">${order.destLocation}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">赏金</span>
+                            <span class="order-value">${order.reward}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">截止时间</span>
+                            <span class="order-value">${order.deadline}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">发布者</span>
+                            <span class="order-value">${order.publisher}</span>
+                        </div>
+                        <div class="order-item">
+                            <span class="order-label">发布者联系方式</span>
+                            <span class="order-value">${order.contact}</span>
+                        </div>
+                    </div>
+                    <div class="order-footer">
+                        ${getAcceptOrderButtons(order)} <!-- 动态生成按钮 -->
+                    </div>
+                `;
+                acceptList.appendChild(orderCard);
+            });
+        }
+
+        // 绑定订单标签页切换事件
+        function bindOrderTabSwitch() {
+            const publishTab = document.getElementById("myPublishTab");
+            const acceptTab = document.getElementById("myAcceptTab");
+            const publishList = document.getElementById("myPublishList");
+            const acceptList = document.getElementById("myAcceptList");
+
+            // 切换到“我发布的”
+            publishTab.addEventListener("click", () => {
+                publishTab.classList.add("active");
+                acceptTab.classList.remove("active");
+                publishList.classList.remove("d-none");
+                acceptList.classList.add("d-none");
+            });
+
+            // 切换到“我接单的”
+            acceptTab.addEventListener("click", () => {
+                acceptTab.classList.add("active");
+                publishTab.classList.remove("active");
+                acceptList.classList.remove("d-none");
+                publishList.classList.add("d-none");
+            });
+        }
+
+        // 绑定模态框交互事件（接单确认、凭证上传、确认送达）
+        function bindModalEvents() {
+            // 1. 接单确认模态框（发布者确认）
+            const acceptConfirmModal = new bootstrap.Modal(document.getElementById("acceptConfirmModal"));
+            const confirmAcceptBtn = document.getElementById("confirmAcceptBtn");
+            // 点击“确认接单”按钮（动态生成的按钮，用事件委托）
+            document.addEventListener("click", (e) => {
+                if (e.target.classList.contains("btn-confirm-accept")) {
+                    const orderId = e.target.dataset.orderId;
+                    const userName = e.target.dataset.userName;
+                    // 填充模态框数据
+                    document.getElementById("confirmOrderId").value = orderId;
+                    document.getElementById("acceptUserName").textContent = userName;
+                    // 打开模态框
+                    acceptConfirmModal.show();
+                }
+            });
+            // 确认接单逻辑
+            confirmAcceptBtn.addEventListener("click", () => {
+                const orderId = document.getElementById("confirmOrderId").value;
+                alert(`已确认订单${orderId}的接单申请，联系方式已同步给接单者`);
+                acceptConfirmModal.hide();
+                // 刷新订单列表（模拟状态变更）
+                loadMyPublishOrders();
+            });
+
+            // 2. 凭证上传模态框（接单者上传）
+            const voucherUploadModal = new bootstrap.Modal(document.getElementById("voucherUploadModal"));
+            const voucherInput = document.getElementById("voucherInput");
+            const voucherPreview = document.getElementById("voucherPreview");
+            const previewImg = document.getElementById("previewImg");
+            const submitVoucherBtn = document.getElementById("submitVoucherBtn");
+            // 点击“上传凭证”按钮（事件委托）
+            document.addEventListener("click", (e) => {
+                if (e.target.classList.contains("btn-upload-voucher")) {
+                    const orderId = e.target.dataset.orderId;
+                    // 存储订单ID
+                    document.getElementById("uploadOrderId").value = orderId;
+                    // 重置预览和按钮状态
+                    voucherPreview.classList.add("d-none");
+                    previewImg.src = "";
+                    submitVoucherBtn.disabled = true;
+                    // 打开模态框
+                    voucherUploadModal.show();
+                }
+            });
+            // 预览上传的凭证
+            voucherInput.addEventListener("change", (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        previewImg.src = event.target.result;
+                        voucherPreview.classList.remove("d-none");
+                        submitVoucherBtn.disabled = false;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            // 提交凭证逻辑
+            submitVoucherBtn.addEventListener("click", () => {
+                const orderId = document.getElementById("uploadOrderId").value;
+                alert(`订单${orderId}的取件凭证已上传，等待发布者确认送达`);
+                voucherUploadModal.hide();
+                // 刷新订单列表（模拟状态变更）
+                loadMyAcceptOrders();
+            });
+
+            // 3. 确认送达模态框（发布者确认）
+            const completeConfirmModal = new bootstrap.Modal(document.getElementById("completeConfirmModal"));
+            const confirmCompleteBtn = document.getElementById("confirmCompleteBtn");
+            // 点击“确认送达”按钮（事件委托）
+            document.addEventListener("click", (e) => {
+                if (e.target.classList.contains("btn-confirm-complete")) {
+                    const orderId = e.target.dataset.orderId;
+                    // 存储订单ID
+                    document.getElementById("completeOrderId").value = orderId;
+                    // 打开模态框
+                    completeConfirmModal.show();
+                }
+            });
+            // 确认送达逻辑
+            confirmCompleteBtn.addEventListener("click", () => {
+                const orderId = document.getElementById("completeOrderId").value;
+                alert(`已确认订单${orderId}送达，赏金已释放给接单者`);
+                completeConfirmModal.hide();
+                // 刷新订单列表（模拟状态变更）
+                loadMyPublishOrders();
+            });
+
+            // 4. 取消订单逻辑（事件委托）
+            document.addEventListener("click", (e) => {
+                if (e.target.classList.contains("btn-cancel-order")) {
+                    const orderId = e.target.dataset.orderId;
+                    if (confirm(`确定要取消订单${orderId}吗？`)) {
+                        alert(`订单${orderId}已取消`);
+                        // 刷新订单列表（模拟状态变更）
+                        loadMyPublishOrders();
+                    }
+                }
+            });
+        }
+
+        // 工具函数：获取订单状态文本（英文转中文）
+        function getStatusText(status) {
+            const statusMap = {
+                "pending": "待接单",
+                "accepted": "已接单",
+                "completed": "已完成",
+                "canceled": "已取消"
+            };
+            return statusMap[status] || status;
+        }
+
+        // 工具函数：生成“我发布的订单”按钮（按状态区分）
+        function getPublishOrderButtons(order) {
+            switch (order.status) {
+                case "pending":
+                    return `
+                        <button class="btn btn-order btn-secondary btn-cancel-order" data-order-id="${order.id}">取消订单</button>
+                        <button class="btn btn-order btn-primary btn-confirm-accept" data-order-id="${order.id}" data-user-name="小李（学）">确认接单（小李）</button>
+                    `;
+                case "accepted":
+                    return `
+                        <button class="btn btn-order btn-primary btn-confirm-complete" data-order-id="${order.id}">确认送达</button>
+                    `;
+                case "completed":
+                case "canceled":
+                    return `
+                        <button class="btn btn-order btn-secondary" disabled>已${getStatusText(order.status)}</button>
+                    `;
+                default:
+                    return "";
+            }
+        }
+
+        // 工具函数：生成“我接单的订单”按钮（按状态区分）
+        function getAcceptOrderButtons(order) {
+            switch (order.status) {
+                case "accepted":
+                    return `
+                        <button class="btn btn-order btn-primary btn-upload-voucher" data-order-id="${order.id}">上传取件凭证</button>
+                    `;
+                case "completed":
+                    return `
+                        <button class="btn btn-order btn-secondary" disabled>已完成（赏金已到账）</button>
+                    `;
+                default:
+                    return "";
+            }
+        }
+    </script>
+    <!-- 引入Bootstrap图标 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</body>
+</html>
