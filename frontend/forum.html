@@ -6,18 +6,8 @@
     <title>论坛 - 校园车辆管理系统</title>
     <!-- 引入依赖 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
     <style>
-        /* 导航栏样式（与首页保持一致） */
-        .navbar-brand {
-            font-size: 1.8rem !important;
-            font-weight: bold;
-            pointer-events: none;
-            cursor: default;
-        }
-        .nav-link {
-            font-size: 1.1rem;
-            margin: 0 8px;
-        }
         /* 论坛头部样式 */
         .forum-header {
             display: flex;
@@ -227,8 +217,9 @@
     </style>
 </head>
 <body>
+    <div class="gradient-bg"><div class="g-blob blob-1"></div><div class="g-blob blob-2"></div><div class="g-blob blob-3"></div></div>
     <!-- 头部导航（与首页一致） -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
         <div class="container">
             <a class="navbar-brand text-primary" href="/index.html">校园车辆管理系统</a>
             <div class="collapse navbar-collapse">
@@ -252,9 +243,10 @@
             </div>
         </div>
     </nav>
+    <div style="height: 80px;"></div>
 
     <!-- 主体内容（论坛头部+分类标签+帖子列表） -->
-    <div class="container">
+    <div class="container main-container">
         <!-- 论坛头部（标题+发布按钮） -->
         <div class="forum-header">
             <h4 class="text-dark">校园互助论坛</h4>
@@ -273,7 +265,6 @@
             <button class="tag active" data-tag="all">全部</button>
             <button class="tag" data-tag="express">代拿快递</button>
             <button class="tag" data-tag="takeaway">代拿外卖</button>
-            <button class="tag" data-tag="carShare">求合租车</button>
             <button class="tag" data-tag="experience">经验分享</button>
         </div>
 
@@ -319,7 +310,6 @@
                                 <option value="">请选择类型</option>
                                 <option value="express">代拿快递</option>
                                 <option value="takeaway">代拿外卖</option>
-                                <option value="carShare">求合租车</option>
                                 <option value="experience">经验分享</option>
                             </select>
                         </div>
@@ -587,14 +577,14 @@
             if (userInfo.role === "user") {
                 menuElement.innerHTML = `
                     <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
-                    <li><a class="dropdown-item" href="/rent.html">车辆发布</a></li>
+                    <li><a class="dropdown-item" href="/vehicleManage.html">车辆管理</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
                 `;
             } else if (userInfo.role === "admin") {
                 menuElement.innerHTML = `
                     <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
-                    <li><a class="dropdown-item" href="/admin.html">管理员后台</a></li>
+                    <li><a class="dropdown-item" href="/admin.html">管理界面</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
                 `;
@@ -649,7 +639,9 @@
                     let postTypeTag = '经验分享';
                     if (post.type === 'daigou_express') postTypeTag = '代拿快递';
                     else if (post.type === 'daigou_food') postTypeTag = '代拿外卖';
-                    else if (post.type === 'share') postTypeTag = '求合租车';
+                    
+                    // 判断是否有进行中的接单
+                    const hasActiveAccept = post.has_active_accept > 0;
 
                     // 格式化内容描述
                     const desc = post.content || (post.pickup_location && post.deliver_location
@@ -657,11 +649,13 @@
                         : '无详细描述');
 
                     const userInfo = JSON.parse(localStorage.getItem("userInfo") || "null");
-                    const canAccept = userInfo && userInfo.user_id !== post.user_id && (post.type === 'daigou_express' || post.type === 'daigou_food');
+                    // 只有在没有进行中的接单时才能接单
+                    const canAccept = userInfo && userInfo.user_id !== post.user_id && (post.type === 'daigou_express' || post.type === 'daigou_food') && !hasActiveAccept;
 
                     postCard.innerHTML = `
                         <div class="post-header">
                             <span class="post-tag">${postTypeTag}</span>
+                            ${hasActiveAccept ? '<span class="badge bg-warning text-dark ms-2">进行中</span>' : ''}
                             <span class="post-time">${postTime}</span>
                         </div>
                         <div class="post-content">
@@ -920,7 +914,6 @@
                 "all": "全部",
                 "express": "代拿快递",
                 "takeaway": "代拿外卖",
-                "carShare": "求合租车",
                 "experience": "经验分享"
             };
             return tagMap[tag] || tag;
@@ -1021,7 +1014,16 @@
                     orderCard.className = "order-card";
                     
                     const typeText = post.type === 'daigou_express' ? '代拿快递' : '代拿外卖';
-                    const statusText = post.is_verified ? '已审核' : '待审核';
+                    // 显示帖子状态
+                    const postStatusMap = {
+                        'open': '进行中',
+                        'completed': '已完成',
+                        'cancelled': '已取消'
+                    };
+                    const statusText = postStatusMap[post.status] || '进行中';
+                    const statusClass = post.status === 'completed' ? 'text-success' : 
+                                       post.status === 'cancelled' ? 'text-danger' : 
+                                       'text-primary';
                     
                     orderCard.innerHTML = `
                         <div class="order-header">
@@ -1052,12 +1054,12 @@
                                                     <br><small class="text-muted">${accStatusMap[acc.status]}</small>
                                                 </div>
                                                 <div>
-                                                    ${acc.status === 'pending' ? `
+                                                    ${post.status === 'open' && acc.status === 'pending' ? `
                                                         <button class="btn btn-sm btn-success confirm-accept-btn" data-accept-id="${acc.accept_id}" data-accepter-name="${acc.accepter_name}">
                                                             确认接单
                                                         </button>
                                                     ` : ''}
-                                                    ${acc.status === 'accepted' ? `
+                                                    ${post.status === 'open' && acc.status === 'accepted' ? `
                                                         <button class="btn btn-sm btn-primary complete-accept-btn" data-accept-id="${acc.accept_id}">
                                                             确认完成
                                                         </button>
@@ -1237,7 +1239,7 @@
             }
         }
 
-        // 加载其他类型的帖子（求合租车、经验分享）
+        // 加载其他类型的帖子（经验分享）
         async function loadOtherPosts() {
             const user_id = localStorage.getItem('user_id');
             const container = document.getElementById("otherPostsList");
@@ -1248,13 +1250,13 @@
                 if (!res.ok) throw new Error('获取数据失败');
                 
                 const posts = await res.json();
-                // 只显示share类型的帖子（求合租车和经验分享）
+                // 只显示share类型的帖子（经验分享）
                 const otherPosts = posts.filter(p => p.type === 'share');
 
                 container.innerHTML = "";
                 
                 if (otherPosts.length === 0) {
-                    container.innerHTML = "<p class='text-muted text-center'>暂无求合租车或经验分享帖子</p>";
+                    container.innerHTML = "<p class='text-muted text-center'>暂无经验分享帖子</p>";
                     return;
                 }
 
@@ -1262,9 +1264,15 @@
                     const orderCard = document.createElement("div");
                     orderCard.className = "order-card";
                     
-                    // 根据是否有route字段判断是求合租车还是经验分享
-                    const typeText = post.route ? '求合租车' : '经验分享';
-                    const statusText = post.is_verified ? '已审核' : '待审核';
+                    // 类型为经验分享
+                    const typeText = '经验分享';
+                    // 显示帖子状态
+                    const postStatusMap = {
+                        'open': '进行中',
+                        'completed': '已完成',
+                        'cancelled': '已取消'
+                    };
+                    const statusText = postStatusMap[post.status] || '进行中';
                     
                     orderCard.innerHTML = `
                         <div class="order-header">

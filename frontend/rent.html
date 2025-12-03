@@ -5,61 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>出租车辆 - 校园车辆管理系统</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   <link rel="stylesheet" href="assets/style.css">
   <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=a49a852abb90dd6856b2d10227220702&plugin=AMap.Geocoder"></script>
-  <style>
-    .navbar-brand {
-      font-size: 1.8rem !important;
-      font-weight: bold;
-      pointer-events: none;
-      cursor: default;
-    }
-    .nav-link {
-      font-size: 1.1rem;
-      margin: 0 8px;
-    }
-    #map-container {
-      height: 500px;
-      width: 100%;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      margin: 20px 0;
-      background: #f0f0f0;
-    }
-    .form {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      margin: 20px 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .btn-primary {
-      background-color: #4299e1;
-      border-color: #4299e1;
-    }
-    .btn-primary:hover {
-      background-color: #3182ce;
-      border-color: #3182ce;
-    }
-  </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+  <div class="gradient-bg">
+    <div class="g-blob blob-1"></div>
+    <div class="g-blob blob-2"></div>
+    <div class="g-blob blob-3"></div>
+  </div>
+
+  <nav class="navbar navbar-expand-lg navbar-light fixed-top">
     <div class="container">
-      <a class="navbar-brand text-primary" href="/index.html">校园车辆管理系统</a>
-      <div class="collapse navbar-collapse">
+      <a class="navbar-brand" href="/index.html">
+        <i class="bi bi-car-front-fill me-2"></i>校园车辆管理
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto">
-          <li class="nav-item"><a class="nav-link text-dark" href="/index.html">首页</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="/carRent.html">租车</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="/forum.html">论坛</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="/blacklist.html">黑名单</a></li>
+          <li class="nav-item"><a class="nav-link" href="/index.html">首页</a></li>
+          <li class="nav-item"><a class="nav-link" href="/carRent.html">租车</a></li>
+          <li class="nav-item"><a class="nav-link" href="/forum.html">论坛</a></li>
+          <li class="nav-item"><a class="nav-link" href="/blacklist.html">黑名单</a></li>
         </ul>
         <ul class="navbar-nav">
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-primary" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+            <a class="nav-link dropdown-toggle fw-bold text-primary" href="#" role="button" data-bs-toggle="dropdown">
               个人中心
             </a>
-            <ul class="dropdown-menu dropdown-menu-end" id="userMenu">
+            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg" id="userMenu">
               <li><a class="dropdown-item" href="/login.html">请先登录</a></li>
             </ul>
           </li>
@@ -68,53 +45,168 @@
     </div>
   </nav>
 
+  <div style="height: 80px;"></div>
+
   <div class="container">
-    <header class="mb-4">
-      <h1>出租车辆</h1>
-      <button onclick="history.back()" class="btn btn-secondary">返回</button>
-    </header>
+    <div class="main-container">
+      <h2 class="page-title mb-4">
+        <i class="bi bi-upload me-2"></i>上架车辆
+      </h2>
+      
+      <div class="row">
+        <div class="col-lg-5 mb-4">
+          <div class="custom-card h-100">
+            <h5 class="mb-3">1. 填写信息</h5>
+            <form id="rent-form">
+              <div class="mb-3">
+                <label class="form-label">选择车辆 <span class="text-danger">*</span></label>
+                <select class="form-select" id="vehicle_id" name="vehicle_id" required>
+                  <option value="">请选择要出租的车辆</option>
+                </select>
+                <div class="form-text">
+                  没有车辆？<a href="#" data-bs-toggle="modal" data-bs-target="#addVehicleModal" onclick="window.location.href='/personalInfo.html'">去注册</a>
+                </div>
+              </div>
 
-    <section class="map">
-      <h2>点击地图选择车辆位置</h2>
-      <div id="map-container"></div>
-    </section>
+              <div class="mb-3">
+                <label class="form-label">默认备注</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="desc" name="desc" placeholder="选填，自动填充车辆描述">
+                  <button class="btn btn-outline-secondary" type="button" id="fillDefaultRemarkBtn">填充</button>
+                </div>
+              </div>
 
-    <section class="form">
-      <h2>填写车辆信息</h2>
-      <form id="rent-form">
-        <div class="mb-3">
-          <label class="form-label">车辆类型：</label>
-          <select name="type" class="form-select" required>
-            <option value="bicycle">自行车</option>
-            <option value="ebike">电动车</option>
-          </select>
+              <div class="mb-3">
+                <label class="form-label">位置描述 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="location" name="location" placeholder="例如：东区宿舍楼下车棚" required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">租金 (元/小时) <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text">¥</span>
+                  <input type="number" class="form-control" id="price" name="price" min="1" max="50" value="3" required>
+                </div>
+              </div>
+
+              <input type="hidden" id="lng" name="lng">
+              <input type="hidden" id="lat" name="lat">
+              <input type="hidden" id="address" name="address">
+
+              <div class="alert alert-info small">
+                <i class="bi bi-info-circle me-1"></i> 请在右侧地图点击选择准确位置，然后在上方输入具体描述。
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100 py-2">
+                <i class="bi bi-check-lg me-1"></i>确认上架
+              </button>
+            </form>
+          </div>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label">每小时价格（元）：</label>
-          <input type="number" name="price" class="form-control" min="1" step="0.5" placeholder="例如：3" required>
+        <div class="col-lg-7">
+          <div class="custom-card h-100 d-flex flex-column">
+            <h5 class="mb-3">2. 标记位置</h5>
+            <div id="map-container" style="flex: 1; min-height: 400px; border-radius: 12px; border: 2px solid #eee;"></div>
+          </div>
         </div>
-
-        <div class="mb-3">
-          <label class="form-label">详细描述（可选）：</label>
-          <textarea name="desc" class="form-control" placeholder="例如：黑色电动车，车牌号：晋A12345"></textarea>
-        </div>
-
-        <input type="hidden" name="lng" id="lng">
-        <input type="hidden" name="lat" id="lat">
-        <input type="hidden" name="address" id="address">
-
-        <button type="submit" class="btn btn-primary">提交出租</button>
-      </form>
-    </section>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    let map, geocoder, marker;
-    const user_id = localStorage.getItem('user_id');
+    let map, marker, geocoder;
+
+    // 加载我的已审核通过车辆
+    async function loadMyVerifiedVehicles() {
+      const user_id = localStorage.getItem('user_id');
+      if (!user_id) return;
+
+      try {
+        const res = await fetch('/api/vehicles/my', {
+          headers: {
+            'Authorization': 'Bearer ' + user_id
+          }
+        });
+        const vehicles = await res.json();
+        if (res.ok) {
+          const select = document.getElementById('vehicle_id');
+          // 过滤出 verify=1 且 status=idle 的车辆
+          const availableVehicles = vehicles.filter(v => v.is_verified == 1 && v.status === 'idle');
+          
+          if (availableVehicles.length === 0) {
+            const option = document.createElement('option');
+            option.textContent = '暂无可用车辆（需审核通过且闲置）';
+            select.appendChild(option);
+            select.disabled = true;
+          } else {
+            availableVehicles.forEach(v => {
+              const option = document.createElement('option');
+              option.value = v.vehicle_id;
+              option.textContent = `${v.plate_number} - ${v.type === 'ebike' ? '电动车' : '自行车'}`;
+              option.dataset.description = v.description || '';
+              select.appendChild(option);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('加载车辆列表失败', error);
+      }
+    }
+
+    // 填充默认备注
+    function fillDefaultRemark() {
+      const select = document.getElementById('vehicle_id');
+      const selectedOption = select.options[select.selectedIndex];
+      const desc = document.getElementById('desc');
+      
+      if (select.value && selectedOption.dataset.description) {
+        desc.value = selectedOption.dataset.description;
+      } else {
+        alert('请先选择车辆');
+      }
+    }
+
+    // 初始化个人中心菜单
+    function initUserMenu() {
+      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+      const menuElement = document.getElementById("userMenu");
+      if (!userInfo) return;
+
+      menuElement.innerHTML = "";
+      if (userInfo.role === "user") {
+        menuElement.innerHTML = `
+          <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+          <li><a class="dropdown-item" href="/vehicleManage.html">车辆管理</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
+        `;
+      } else if (userInfo.role === "admin") {
+        menuElement.innerHTML = `
+          <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+          <li><a class="dropdown-item" href="/admin.html">管理界面</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
+        `;
+      }
+
+      // 退出登录事件
+      document.getElementById("logoutBtn")?.addEventListener("click", () => {
+        if (confirm("确定要退出登录吗？")) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("userInfo");
+          localStorage.removeItem("user_id");
+          window.location.href = "/login.html";
+        }
+      });
+    }
 
     function initMap() {
+      if (typeof AMap === 'undefined') {
+        setTimeout(initMap, 500);
+        return;
+      }
       map = new AMap.Map('map-container', {
         zoom: 16,
         center: [112.58451, 37.79676],
@@ -150,34 +242,77 @@
         location.href = '/login.html';
         return;
       }
-      if (!document.getElementById('lng').value) {
+
+      const vehicleId = this.vehicle_id.value;
+      const location = this.location.value.trim();
+      const price = this.price.value;
+
+      if (!vehicleId) {
+        alert('请选择车辆！');
+        return;
+      }
+
+      if (!location) {
+        alert('请填写取车地点！');
+        return;
+      }
+
+      if (!price || price < 1 || price > 50) {
+        alert('请填写1-50元之间的租金！');
+        return;
+      }
+
+      if (!this.lng.value || !this.lat.value) {
         alert('请在地图上标记位置！');
         return;
       }
 
+      const fullLocation = this.address.value + ' ' + location;
+      const desc = this.desc.value.trim();
+
       const data = {
-        type: this.type.value,
-        price_per_hour: this.price.value,
-        location_desc: this.address.value + ' ' + (this.desc.value || '').trim(),
+        vehicle_id: vehicleId,
+        location_desc: fullLocation + (desc ? ` (${desc})` : ''),
+        price_per_hour: price,
         lng: this.lng.value,
         lat: this.lat.value
       };
 
-      const res = await fetch('/api/rent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + user_id
-        },
-        body: JSON.stringify(data)
-      });
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '上架中...';
 
-      const result = await res.json();
-      alert(result.msg);
-      if (res.ok) history.back();
+      try {
+        const res = await fetch('/api/rent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + user_id
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await res.json();
+        alert(result.msg);
+        if (res.ok) {
+          alert('车辆上架成功！其他用户现在可以租用您的车辆了');
+          history.back();
+        }
+      } catch (error) {
+        alert('上架失败：' + error.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '上架车辆';
+      }
     };
 
+    // 初始化页面
+    initUserMenu();
+    loadMyVerifiedVehicles();
     initMap();
+    
+    // 绑定填充默认备注按钮
+    document.getElementById('fillDefaultRemarkBtn').addEventListener('click', fillDefaultRemark);
   </script>
 </body>
 </html>

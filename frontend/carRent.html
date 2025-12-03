@@ -5,131 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>租车 - 校园车辆管理系统</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="assets/style.css">
     <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=a49a852abb90dd6856b2d10227220702&plugin=AMap.Geocoder"></script>
-    <style>
-        .navbar-brand {
-            font-size: 1.8rem !important;
-            font-weight: bold;
-            pointer-events: none;
-            cursor: default;
-        }
-        .nav-link {
-            font-size: 1.1rem;
-            margin: 0 8px;
-        }
-        .mode-tabs {
-            border-bottom: 1px solid #e9ecef;
-            margin-bottom: 20px;
-        }
-        .mode-tab {
-            padding: 10px 20px;
-            border: none;
-            background: transparent;
-            font-size: 1.1rem;
-            color: #666;
-            position: relative;
-        }
-        .mode-tab.active {
-            color: #4299e1;
-            font-weight: 500;
-        }
-        .mode-tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background-color: #4299e1;
-        }
-        #rentMap {
-            width: 100%;
-            height: 60vh;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            display: block;
-        }
-        .car-list {
-            display: none;
-        }
-        .car-card {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        .car-img {
-            width: 100px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-        .car-info {
-            flex: 1;
-        }
-        .car-type {
-            font-size: 0.9rem;
-            color: #4299e1;
-            background-color: #e8f4f8;
-            padding: 2px 8px;
-            border-radius: 12px;
-            display: inline-block;
-            margin-bottom: 5px;
-        }
-        .car-price {
-            font-weight: bold;
-            color: #333;
-        }
-        .car-location {
-            font-size: 0.9rem;
-            color: #666;
-            margin: 5px 0;
-        }
-        .car-owner {
-            font-size: 0.85rem;
-            color: #999;
-        }
-        .modal-header {
-            background-color: #e8f4f8;
-        }
-        .fee-calculator {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 15px 0;
-        }
-        .btn-primary {
-            background-color: #4299e1;
-            border-color: #4299e1;
-        }
-        .btn-primary:hover {
-            background-color: #3182ce;
-            border-color: #3182ce;
-        }
-    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+    <div class="gradient-bg">
+        <div class="g-blob blob-1"></div>
+        <div class="g-blob blob-2"></div>
+        <div class="g-blob blob-3"></div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
         <div class="container">
-            <a class="navbar-brand text-primary" href="/index.html">校园车辆管理系统</a>
-            <div class="collapse navbar-collapse">
+            <a class="navbar-brand" href="/index.html">校园车辆管理系统</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link text-dark" href="/index.html">首页</a></li>
-                    <li class="nav-item"><a class="nav-link active text-primary" href="/carRent.html">租车</a></li>
-                    <li class="nav-item"><a class="nav-link text-dark" href="/forum.html">论坛</a></li>
-                    <li class="nav-item"><a class="nav-link text-dark" href="/blacklist.html">黑名单</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/index.html">首页</a></li>
+                    <li class="nav-item"><a class="nav-link active text-primary fw-bold" href="/carRent.html">租车</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/forum.html">论坛</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/blacklist.html">黑名单</a></li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-primary" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle text-primary fw-bold" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                             个人中心
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" id="userMenu">
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg" id="userMenu">
                             <li><a class="dropdown-item" href="/login.html">请先登录</a></li>
                         </ul>
                     </li>
@@ -138,132 +43,154 @@
         </div>
     </nav>
 
+    <div style="height: 80px;"></div>
+
     <div class="container">
-        <!-- 筛选功能 -->
-        <div class="filter-section mb-3" style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-            <div class="row align-items-center">
-                <div class="col-md-3">
-                    <label class="form-label">车辆类型：</label>
-                    <div>
-                        <label class="me-3"><input type="checkbox" id="filter-ebike" checked> 电动车</label>
-                        <label><input type="checkbox" id="filter-bicycle" checked> 自行车</label>
+        <div class="dashboard-container">
+            <!-- 筛选功能 -->
+            <div class="filter p-3 mb-4 rounded-3 bg-light">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted mb-1">车辆类型</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="filter-ebike" checked>
+                                <label class="form-check-label">电动车</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="filter-bicycle" checked>
+                                <label class="form-check-label">自行车</label>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">价格范围：</label>
-                    <div class="input-group">
-                        <input type="number" id="min-price" class="form-control" value="0" min="0" step="0.5" placeholder="最低">
-                        <span class="input-group-text">-</span>
-                        <input type="number" id="max-price" class="form-control" value="10" min="0" step="0.5" placeholder="最高">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted mb-1">价格范围 (元/小时)</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" id="min-price" class="form-control" value="0" min="0" step="0.5" placeholder="最低">
+                            <span class="input-group-text bg-white border-start-0 border-end-0">-</span>
+                            <input type="number" id="max-price" class="form-control" value="10" min="0" step="0.5" placeholder="最高">
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-2">
-                    <button onclick="applyFilter()" class="btn btn-primary w-100">筛选</button>
-                </div>
-                <div class="col-md-3">
-                    <button onclick="resetFilter()" class="btn btn-secondary w-100">重置</button>
+                    <div class="col-md-2">
+                        <label class="form-label d-none d-md-block">&nbsp;</label>
+                        <button onclick="applyFilter()" class="btn btn-primary btn-sm w-100">筛选</button>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label d-none d-md-block">&nbsp;</label>
+                        <button onclick="resetFilter()" class="btn btn-outline-secondary btn-sm w-100 border-0">重置</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="mode-tabs">
-            <button class="mode-tab active" id="mapModeBtn">地图模式</button>
-            <button class="mode-tab" id="listModeBtn">列表模式</button>
-        </div>
+            <div class="mode-tabs">
+                <button class="mode-tab active" id="mapModeBtn"><i class="bi bi-map me-1"></i>地图模式</button>
+                <button class="mode-tab" id="listModeBtn"><i class="bi bi-list-ul me-1"></i>列表模式</button>
+            </div>
 
-        <div id="rentMap"></div>
+            <div id="rentMap"></div>
 
-        <div class="car-list" id="carListContainer">
+            <div class="car-list" id="carListContainer" style="display: none;">
+                <!-- 列表内容由JS填充 -->
+            </div>
         </div>
     </div>
 
     <!-- 租车Modal -->
     <div class="modal fade" id="rentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="rentModalTitle">租用车辆</h5>
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-light border-0">
+                    <h5 class="modal-title fw-bold" id="rentModalTitle">租用车辆</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <input type="hidden" id="rentCarId">
-                    <div class="mb-3">
-                        <label class="form-label">车辆信息</label>
-                        <div class="card">
-                            <div class="card-body">
-                                <h6 class="card-title" id="modalCarType">电动车</h6>
-                                <p class="card-text"><strong>位置：</strong><span id="modalCarLocation">东区宿舍楼下</span></p>
-                                <p class="card-text"><strong>时价：</strong><span id="modalCarPrice">3</span>元/小时</p>
-                                <p class="card-text"><strong>车主：</strong><span id="modalCarOwner">张**（学）</span></p>
-                            </div>
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <h6 class="mb-0 fw-bold" id="modalCarType">电动车</h6>
+                            <span class="badge bg-primary bg-opacity-10 text-primary ms-2" id="modalCarPriceBadge"><span id="modalCarPrice">3</span>元/小时</span>
+                        </div>
+                        <div class="text-muted small">
+                            <p class="mb-1"><i class="bi bi-geo-alt me-1"></i><span id="modalCarLocation">东区宿舍楼下</span></p>
+                            <p class="mb-0"><i class="bi bi-person me-1"></i><span id="modalCarOwner">张**</span></p>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="rentHours" class="form-label">租用时长（小时）</label>
-                        <input type="number" class="form-control" id="rentHours" min="1" max="6" value="2" required>
-                        <div class="form-text">建议租用1-6小时，超过需重新下单</div>
+                    
+                    <div class="mb-4">
+                        <label for="rentHours" class="form-label fw-bold small text-uppercase text-muted">租用时长</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="rentHours" min="1" max="6" value="2" required>
+                            <span class="input-group-text">小时</span>
+                        </div>
+                        <div class="form-text small">建议租用 1-6 小时</div>
                     </div>
+                    
                     <div class="fee-calculator">
-                        <h6 class="mb-2">费用计算</h6>
-                        <p>时价：<span id="calcPrice">3</span>元/小时</p>
-                        <p>时长：<span id="calcHours">2</span>小时</p>
-                        <p class="fw-bold">预计总费用：<span id="calcTotal">6</span>元（线下支付）</p>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">单价</span>
+                            <span>¥<span id="calcPriceText">3</span>/小时</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted">时长</span>
+                            <span>x <span id="calcHours">2</span></span>
+                        </div>
+                        <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-dark">预计总费用</span>
+                            <span class="fs-4 fw-bold text-primary">¥<span id="calcTotal">6</span></span>
+                        </div>
+                        <div class="text-center mt-2">
+                            <span class="badge bg-warning bg-opacity-10 text-warning small fw-normal">线下支付</span>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="submitRentBtn">提交订单</button>
+                <div class="modal-footer border-0 bg-light rounded-bottom-4">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary px-4" id="submitRentBtn">确认下单</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 订单成功Modal - 显示联系信息 -->
+    <!-- 订单成功Modal -->
     <div class="modal fade" id="orderSuccessModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">🎉 预订成功</h5>
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title"><i class="bi bi-check-circle-fill me-2"></i>预订成功</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="alert alert-success">
-                        <strong>订单已提交！</strong> 车主已收到通知，等待车主确认订单。
+                <div class="modal-body p-4">
+                    <div class="text-center mb-4">
+                        <h4 class="fw-bold text-success">订单已提交</h4>
+                        <p class="text-muted small">请联系车主取车</p>
                     </div>
                     
-                    <h6 class="mb-3">📋 订单信息</h6>
-                    <div class="card mb-3">
+                    <div class="card border-0 bg-light mb-3">
                         <div class="card-body">
-                            <p><strong>订单号：</strong><span id="successOrderId">-</span></p>
-                            <p><strong>车辆类型：</strong><span id="successCarType">-</span></p>
-                            <p><strong>取车地点：</strong><span id="successLocation">-</span></p>
-                            <p><strong>租用时长：</strong><span id="successHours">-</span> 小时</p>
-                            <p class="mb-0"><strong>预计费用：</strong><span id="successFee" class="text-danger fs-5">-</span> 元</p>
+                            <div class="row g-2 small">
+                                <div class="col-6 text-muted">订单号</div>
+                                <div class="col-6 text-end fw-bold" id="successOrderId">-</div>
+                                <div class="col-6 text-muted">车辆信息</div>
+                                <div class="col-6 text-end fw-bold" id="successCarType">-</div>
+                                <div class="col-6 text-muted">取车地点</div>
+                                <div class="col-6 text-end fw-bold text-truncate" id="successLocation">-</div>
+                                <div class="col-6 text-muted">预计费用</div>
+                                <div class="col-6 text-end fw-bold text-danger">¥<span id="successFee">-</span></div>
+                            </div>
                         </div>
                     </div>
 
-                    <h6 class="mb-3">📞 车主联系方式</h6>
-                    <div class="card bg-light">
-                        <div class="card-body">
-                            <p><strong>车主姓名：</strong><span id="successOwnerName">-</span></p>
-                            <p class="mb-0"><strong>手机号：</strong><span id="successOwnerPhone" class="text-primary fs-5">-</span></p>
-                            <small class="text-muted">请通过电话或微信联系车主，约定线下交车时间和地点</small>
+                    <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10">
+                        <div class="card-body text-center">
+                            <h6 class="text-primary fw-bold mb-1">车主联系方式</h6>
+                            <div class="fs-4 fw-bold text-dark mb-1" id="successOwnerPhone">-</div>
+                            <div class="small text-muted" id="successOwnerName">-</div>
                         </div>
-                    </div>
-
-                    <div class="alert alert-info mt-3 mb-0">
-                        <strong>💡 温馨提示：</strong>
-                        <ul class="mb-0 mt-2">
-                            <li>车主确认后，订单状态变为"已确认"</li>
-                            <li>取车后请线下支付费用给车主</li>
-                            <li>使用完毕后，双方确认完成订单</li>
-                            <li>可在"个人中心-我的订单"中查看订单状态</li>
-                        </ul>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer border-0 bg-light rounded-bottom-4">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-                    <button type="button" class="btn btn-primary" onclick="window.location.href='/personalInfo.html?tab=orders'">查看我的订单</button>
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='/personalInfo.html'">查看我的订单</button>
                 </div>
             </div>
         </div>
@@ -332,14 +259,14 @@
             if (userInfo.role === "user") {
                 menuElement.innerHTML = `
                     <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
-                    <li><a class="dropdown-item" href="/rent.html">车辆发布</a></li>
+                    <li><a class="dropdown-item" href="/vehicleManage.html">车辆管理</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
                 `;
             } else if (userInfo.role === "admin") {
                 menuElement.innerHTML = `
                     <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
-                    <li><a class="dropdown-item" href="/admin.html">管理员后台</a></li>
+                    <li><a class="dropdown-item" href="/admin.html">管理界面</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
                 `;
@@ -384,18 +311,19 @@
                     position: lnglat,
                     title: v.location_desc,
                     icon: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png',
-                    label: { content: `¥${v.price_per_hour}`, direction: 'top' }
+                    label: { content: '¥' + v.price_per_hour, direction: 'top' }
                 });
 
                 marker.on('click', () => {
                     new AMap.InfoWindow({
                         content: `
-                            <div style="padding:10px;">
-                                <h4>${v.type === 'ebike' ? '电动车' : '自行车'}</h4>
-                                <p><strong>位置：</strong>${v.location_desc}</p>
-                                <p><strong>价格：</strong>¥${v.price_per_hour}/小时</p>
-                                <p><strong>车主：</strong>${v.owner_name}</p>
+                            <div style="padding:10px; min-width: 200px;">
+                                <h5 style="margin:0 0 8px; color:#667eea; font-weight:bold;">${v.type === 'ebike' ? '电动车' : '自行车'}</h5>
+                                <p style="margin:0 0 5px; font-size:13px;"><span style="color:#999;">位置：</span>${v.location_desc}</p>
+                                <p style="margin:0 0 5px; font-size:13px;"><span style="color:#999;">价格：</span><span style="color:#f56565; font-weight:bold;">¥${v.price_per_hour}</span>/小时</p>
+                                <p style="margin:0 0 10px; font-size:13px;"><span style="color:#999;">车主：</span>${v.owner_name}</p>
                                 <button class="btn btn-sm btn-primary w-100 rent-btn" 
+                                        style="background:linear-gradient(135deg, #667eea, #764ba2); border:none; border-radius:20px;"
                                         data-id="${v.vehicle_id}" 
                                         data-type="${v.type === 'ebike' ? '电动车' : '自行车'}" 
                                         data-location="${v.location_desc}" 
@@ -420,7 +348,7 @@
             listContainer.innerHTML = "";
 
             if (vehicles.length === 0) {
-                listContainer.innerHTML = '<p class="text-center text-muted">暂无符合条件的车辆</p>';
+                listContainer.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-bicycle display-4 d-block mb-3 opacity-50"></i><p>暂无符合条件的车辆</p></div>';
                 return;
             }
 
@@ -428,13 +356,16 @@
                 const carCard = document.createElement("div");
                 carCard.className = "car-card";
                 carCard.innerHTML = `
-                    <img src="https://cdn-icons-png.flaticon.com/512/2926/2926655.png" class="car-img" alt="${v.type === 'ebike' ? '电动车' : '自行车'}">
+                    <div class="d-flex align-items-center justify-content-center bg-light rounded-3" style="width:80px; height:80px;">
+                        <i class="bi ${v.type === 'ebike' ? 'bi-lightning-charge' : 'bi-bicycle'} fs-1 text-primary"></i>
+                    </div>
                     <div class="car-info">
                         <span class="car-type">${v.type === 'ebike' ? '电动车' : '自行车'}</span>
-                        <p class="car-price">${v.price_per_hour}元/小时 · ${v.location_desc}</p>
-                        <p class="car-owner">车主：${v.owner_name}</p>
+                        <h5 class="car-price mb-1">¥${v.price_per_hour}<small class="text-muted fw-normal fs-6">/小时</small></h5>
+                        <p class="car-location mb-0"><i class="bi bi-geo-alt text-muted me-1"></i>${v.location_desc}</p>
+                        <p class="car-owner mb-0"><i class="bi bi-person text-muted me-1"></i>${v.owner_name}</p>
                     </div>
-                    <button class="btn btn-primary rent-btn" 
+                    <button class="btn btn-primary px-4 py-2 rounded-pill rent-btn" 
                             data-id="${v.vehicle_id}" 
                             data-type="${v.type === 'ebike' ? '电动车' : '自行车'}" 
                             data-location="${v.location_desc}" 
@@ -474,7 +405,7 @@
         function bindRentEvents() {
             const rentModal = new bootstrap.Modal(document.getElementById("rentModal"));
             const rentHoursInput = document.getElementById("rentHours");
-            const calcPrice = document.getElementById("calcPrice");
+            const calcPriceText = document.getElementById("calcPriceText"); // 注意ID变化
             const calcHours = document.getElementById("calcHours");
             const calcTotal = document.getElementById("calcTotal");
             const submitRentBtn = document.getElementById("submitRentBtn");
@@ -492,7 +423,8 @@
                     document.getElementById("modalCarLocation").textContent = carLocation;
                     document.getElementById("modalCarPrice").textContent = carPrice;
                     document.getElementById("modalCarOwner").textContent = carOwner;
-                    calcPrice.textContent = carPrice;
+                    
+                    if(calcPriceText) calcPriceText.textContent = carPrice;
                     calcHours.textContent = rentHoursInput.value;
                     calcTotal.textContent = (carPrice * rentHoursInput.value).toFixed(1);
 
@@ -502,7 +434,8 @@
 
             rentHoursInput.addEventListener("input", () => {
                 const hours = rentHoursInput.value;
-                const price = calcPrice.textContent;
+                // 这里的逻辑修正：价格需要从模态框或者按钮获取，不能直接读 textContent
+                const price = parseFloat(document.getElementById("modalCarPrice").textContent) || 0;
                 calcHours.textContent = hours;
                 calcTotal.textContent = (price * hours).toFixed(1);
             });
@@ -552,7 +485,6 @@
                         document.getElementById('successOrderId').textContent = result.order_id || '-';
                         document.getElementById('successCarType').textContent = carType;
                         document.getElementById('successLocation').textContent = carLocation;
-                        document.getElementById('successHours').textContent = hours;
                         document.getElementById('successFee').textContent = totalFee;
                         
                         // 显示车主信息（加密显示）
@@ -562,11 +494,11 @@
                             
                             // 姓名加密：只显示姓
                             const encryptedName = ownerName.charAt(0) + '*'.repeat(ownerName.length - 1);
-                            document.getElementById('successOwnerName').textContent = encryptedName;
+                            if(document.getElementById('successOwnerName')) document.getElementById('successOwnerName').textContent = encryptedName;
                             
                             // 手机号加密：显示前3位和后4位
                             const encryptedPhone = ownerPhone.substring(0, 3) + '****' + ownerPhone.substring(7);
-                            document.getElementById('successOwnerPhone').textContent = encryptedPhone;
+                            if(document.getElementById('successOwnerPhone')) document.getElementById('successOwnerPhone').textContent = encryptedPhone;
                         }
                         
                         // 显示订单成功Modal
@@ -588,4 +520,3 @@
     </script>
 </body>
 </html>
-

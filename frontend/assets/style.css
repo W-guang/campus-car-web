@@ -1,0 +1,322 @@
+/* 全局样式重置与字体 */
+body {
+    background: #f8fafc;
+    position: relative;
+    overflow-x: hidden;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+}
+
+/* 1. 流光背景系统 */
+.gradient-bg {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
+    background: #f8fafc; overflow: hidden;
+}
+.g-blob {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6;
+    animation: moveBlob 12s infinite alternate ease-in-out;
+}
+.blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, #a78bfa 0%, transparent 70%); }
+.blob-2 { bottom: -10%; right: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, #60a5fa 0%, transparent 70%); }
+.blob-3 { top: 30%; left: 40%; width: 40vw; height: 40vw; background: radial-gradient(circle, #f472b6 0%, transparent 70%); }
+@keyframes moveBlob {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(-30px, 30px) scale(0.95); }
+}
+
+/* 2. 透明导航栏 */
+.navbar {
+    background: rgba(255,255,255,0.8) !important;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.05);
+    z-index: 1030; /* 确保高于其他内容 */
+}
+/* 修复下拉菜单被遮挡的问题 */
+.dropdown-menu {
+    z-index: 1050;
+}
+/* 修复下拉菜单按钮文字和箭头图标重合问题 */
+.dropdown-toggle::after {
+    margin-left: 0.5em;
+}
+.dropdown-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.main-container, .dashboard-container {
+    position: relative;
+    z-index: 1; /* 确保低于导航栏 */
+}
+.navbar-brand {
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.nav-link {
+    font-weight: 500;
+    color: #4a5568 !important;
+}
+.nav-link.active {
+    color: #667eea !important;
+    font-weight: 700;
+}
+
+/* 3. 通用容器 (Dashboard/Content) */
+.dashboard-container, .main-container {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 30px;
+    margin-top: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+    border: 1px solid rgba(255,255,255,0.6);
+}
+
+/* 4. 通用标题样式 */
+.page-title {
+    font-weight: 800;
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+}
+.page-title i {
+    margin-right: 10px;
+    color: #667eea;
+}
+
+/* 5. 按钮样式 */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+    transition: all 0.3s;
+}
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(102,126,234,0.4);
+    background: linear-gradient(135deg, #764ba2, #667eea);
+}
+
+/* 6. 表单控件 */
+.form-control, .form-select {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 15px;
+    background-color: rgba(255,255,255,0.8);
+}
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    background-color: #fff;
+}
+
+/* 7. 卡片通用样式 */
+.custom-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: none;
+}
+.custom-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(102,126,234,0.15);
+}
+
+/* 租车页面特定样式 */
+.mode-tabs {
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 20px;
+}
+.mode-tab {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    font-size: 1.1rem;
+    color: #666;
+    position: relative;
+    transition: all 0.3s;
+}
+.mode-tab:hover {
+    color: #667eea;
+}
+.mode-tab.active {
+    color: #667eea;
+    font-weight: 700;
+}
+.mode-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+}
+#rentMap {
+    width: 100%;
+    height: 60vh;
+    border-radius: 16px;
+    border: 4px solid white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+.car-card {
+    background-color: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    padding: 20px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.3s;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+.car-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+.car-img {
+    width: 100px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+.car-type {
+    font-size: 0.85rem;
+    color: #667eea;
+    background-color: #eef2ff;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+.car-price {
+    font-weight: 800;
+    color: #2d3748;
+    font-size: 1.1rem;
+}
+.fee-calculator {
+    background-color: #f8fafc;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 15px 0;
+    border: 1px solid #e2e8f0;
+}
+
+/* 论坛页面特定样式 */
+.forum-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.btn-publish {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    transition: all 0.3s;
+}
+.btn-publish:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+    color: #fff;
+}
+.tag-container {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.tag {
+    padding: 6px 16px;
+    border-radius: 20px;
+    background-color: white;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+.tag:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+.tag.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+}
+.post-list {
+    display: grid;
+    gap: 15px;
+}
+.post-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    padding: 20px;
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.3s;
+}
+.post-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.post-tag {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background-color: #eef2ff;
+    color: #667eea;
+    font-weight: 600;
+}
+.post-time {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+.post-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 5px;
+}
+.post-desc {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 10px;
+}
+.post-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 10px;
+    margin-top: 10px;
+}
+.take-service-section {
+    margin-top: 40px;
+    padding: 25px;
+    border-radius: 16px;
+    background-color: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.8);
+}

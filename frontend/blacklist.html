@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黑名单与信用管理 - 校园车辆管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="assets/style.css">
+    <style>
+        .credit-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .credit-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .user-identity {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+        .report-count {
+            background: #ff4444;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        .blackroom-badge {
+            background: #333;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-left: 8px;
+        }
+        .permanent-ban {
+            background: #8b0000;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            padding: 8px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            background: #4299e1;
+            color: white;
+        }
+        .report-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #ff4444;
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(255,68,68,0.4);
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        .report-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(255,68,68,0.6);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="gradient-bg"><div class="g-blob blob-1"></div><div class="g-blob blob-2"></div><div class="g-blob blob-3"></div></div>
+    
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand text-primary" href="/index.html">校园车辆管理系统</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link text-dark" href="/index.html">首页</a></li>
+                    <li class="nav-item"><a class="nav-link text-dark" href="/carRent.html">租车</a></li>
+                    <li class="nav-item"><a class="nav-link text-dark" href="/forum.html">论坛</a></li>
+                    <li class="nav-item"><a class="nav-link active text-primary" href="/blacklist.html">黑名单</a></li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-primary" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            个人中心
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" id="userMenu">
+                            <li><a class="dropdown-item" href="/login.html">请先登录</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div style="height: 80px;"></div>
+
+    <!-- 主体内容 -->
+    <div class="container main-container">
+        <h4 class="mb-4">信用管理与黑名单</h4>
+        
+        <!-- 标签页切换 -->
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('blacklist')">
+                <i class="bi bi-exclamation-triangle"></i> 黑名单
+            </button>
+            <button class="tab-btn" onclick="switchTab('blackroom')">
+                <i class="bi bi-door-closed"></i> 小黑屋
+            </button>
+            <button class="tab-btn" onclick="switchTab('myReports')">
+                <i class="bi bi-file-text"></i> 我的举报
+            </button>
+        </div>
+
+        <!-- 黑名单列表 -->
+        <div id="blacklistContent" class="tab-content">
+            <div id="blacklistContainer"></div>
+        </div>
+
+        <!-- 小黑屋列表 -->
+        <div id="blackroomContent" class="tab-content" style="display: none;">
+            <div id="blackroomContainer"></div>
+        </div>
+
+        <!-- 我的举报列表 -->
+        <div id="myReportsContent" class="tab-content" style="display: none;">
+            <div id="myReportsContainer"></div>
+        </div>
+    </div>
+
+    <!-- 举报按钮 -->
+    <button class="report-btn" onclick="showReportModal()" title="提交举报">
+        <i class="bi bi-flag-fill"></i>
+    </button>
+
+    <!-- 举报模态框 -->
+    <div class="modal fade" id="reportModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-flag"></i> 提交举报</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="reportForm">
+                        <div class="mb-3">
+                            <label class="form-label">被举报人学号 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="reportedStudentId" placeholder="请输入被举报人的学号" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">举报类型 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="reportType" required>
+                                <option value="">请选择</option>
+                                <option value="order">订单相关</option>
+                                <option value="vehicle">车辆相关</option>
+                                <option value="post">帖子相关</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">举报原因 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="reportReason" required>
+                                <option value="">请选择</option>
+                                <option value="未履约">未履行约定</option>
+                                <option value="恶意毁约">恶意毁约</option>
+                                <option value="不当行为">不当行为</option>
+                                <option value="欺诈">欺诈行为</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">详细描述 <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="reportDescription" rows="4" placeholder="请详细描述举报情况，包括时间、地点、具体事件等" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">关联订单/帖子ID（选填）</label>
+                            <input type="number" class="form-control" id="relatedId" placeholder="如果有关联的订单或帖子，请填写ID">
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            <strong>注意：</strong>恶意举报将受到处罚。提交后管理员会进行审核，请如实填写。
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="submitReport()">提交举报</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let reportModal;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initUserMenu();
+            loadBlacklist();
+            reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+        });
+
+        // 初始化用户菜单
+        function initUserMenu() {
+            const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+            const menuElement = document.getElementById("userMenu");
+            if (!userInfo) return;
+
+            menuElement.innerHTML = "";
+            if (userInfo.role === "user") {
+                menuElement.innerHTML = `
+                    <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+                    <li><a class="dropdown-item" href="/vehicleManage.html">车辆管理</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="logout()">退出登录</a></li>
+                `;
+            } else if (userInfo.role === "admin") {
+                menuElement.innerHTML = `
+                    <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+                    <li><a class="dropdown-item" href="/admin.html">管理界面</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="logout()">退出登录</a></li>
+                `;
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "/login.html";
+        }
+
+        // 切换标签页
+        function switchTab(tab) {
+            // 更新按钮状态
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.tab-btn').classList.add('active');
+
+            // 显示对应内容
+            document.getElementById('blacklistContent').style.display = 'none';
+            document.getElementById('blackroomContent').style.display = 'none';
+            document.getElementById('myReportsContent').style.display = 'none';
+
+            if (tab === 'blacklist') {
+                document.getElementById('blacklistContent').style.display = 'block';
+                loadBlacklist();
+            } else if (tab === 'blackroom') {
+                document.getElementById('blackroomContent').style.display = 'block';
+                loadBlackroom();
+            } else if (tab === 'myReports') {
+                document.getElementById('myReportsContent').style.display = 'block';
+                loadMyReports();
+            }
+        }
+
+        // 加载黑名单
+        async function loadBlacklist() {
+            const container = document.getElementById('blacklistContainer');
+            container.innerHTML = '<p class="text-center"><i class="spinner-border spinner-border-sm"></i> 加载中...</p>';
+
+            try {
+                const res = await fetch('/api/blacklist');
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="bi bi-shield-check"></i>
+                            <p>暂无黑名单记录</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.map(user => {
+                    // 隐藏姓名和学号
+                    const maskedName = user.name ? user.name.charAt(0) + '*' : '**';
+                    const maskedStudentId = user.student_id ? 
+                        user.student_id.substring(0, 4) + '****' : '********';
+
+                    const badges = [];
+                    if (user.is_banned) {
+                        badges.push('<span class="permanent-ban">永久封禁</span>');
+                    } else if (user.ban_until && new Date(user.ban_until) > new Date()) {
+                        badges.push('<span class="blackroom-badge">小黑屋中</span>');
+                    }
+                    if (user.blackroom_count > 0) {
+                        badges.push(`<span class="blackroom-badge">进过${user.blackroom_count}次小黑屋</span>`);
+                    }
+
+                    return `
+                        <div class="credit-card">
+                            <div class="credit-card-header">
+                                <div class="user-identity">
+                                    <i class="bi bi-person-circle"></i> ${maskedName} | ${maskedStudentId}
+                                </div>
+                                <div>
+                                    <span class="report-count">${user.report_count || 0}次举报</span>
+                                    ${badges.join('')}
+                                </div>
+                            </div>
+                            <div class="text-muted">
+                                <i class="bi bi-info-circle"></i> 该用户因多次被举报而被列入黑名单，请谨慎交易。
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载黑名单失败', error);
+                container.innerHTML = '<div class="alert alert-danger">加载失败，请稍后重试</div>';
+            }
+        }
+
+        // 加载小黑屋列表
+        async function loadBlackroom() {
+            const container = document.getElementById('blackroomContainer');
+            container.innerHTML = '<p class="text-center"><i class="spinner-border spinner-border-sm"></i> 加载中...</p>';
+
+            try {
+                const res = await fetch('/api/blackroom');
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="bi bi-door-open"></i>
+                            <p>暂无小黑屋记录</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.map(record => {
+                    // 隐藏姓名和学号
+                    const maskedName = record.name ? record.name.charAt(0) + '*' : '**';
+                    const maskedStudentId = record.student_id ? 
+                        record.student_id.substring(0, 4) + '****' : '********';
+
+                    const enterTime = new Date(record.enter_time).toLocaleString('zh-CN');
+                    const releaseTime = record.release_time ? 
+                        new Date(record.release_time).toLocaleString('zh-CN') : '永久';
+                    
+                    const status = record.is_permanent ? '永久封禁' : 
+                        (new Date(record.release_time) > new Date() ? '封禁中' : '已解封');
+                    const statusClass = record.is_permanent ? 'danger' : 
+                        (new Date(record.release_time) > new Date() ? 'warning' : 'success');
+
+                    return `
+                        <div class="credit-card">
+                            <div class="credit-card-header">
+                                <div class="user-identity">
+                                    <i class="bi bi-person-x"></i> ${maskedName} | ${maskedStudentId}
+                                </div>
+                                <span class="badge bg-${statusClass}">${status}</span>
+                            </div>
+                            <div>
+                                <p class="mb-1"><strong>第${record.enter_count}次进入小黑屋</strong></p>
+                                <p class="mb-1 text-muted"><i class="bi bi-clock"></i> 进入时间：${enterTime}</p>
+                                <p class="mb-1 text-muted"><i class="bi bi-unlock"></i> 释放时间：${releaseTime}</p>
+                                <p class="mb-0 text-muted"><i class="bi bi-info-circle"></i> 原因：${record.reason || '未知'}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载小黑屋列表失败', error);
+                container.innerHTML = '<div class="alert alert-danger">加载失败，请稍后重试</div>';
+            }
+        }
+
+        // 加载我的举报
+        async function loadMyReports() {
+            const container = document.getElementById('myReportsContainer');
+            const user_id = localStorage.getItem('user_id');
+
+            if (!user_id) {
+                container.innerHTML = '<div class="alert alert-info">请先登录</div>';
+                return;
+            }
+
+            container.innerHTML = '<p class="text-center"><i class="spinner-border spinner-border-sm"></i> 加载中...</p>';
+
+            try {
+                const res = await fetch('/api/reports/my', {
+                    headers: { 'Authorization': 'Bearer ' + user_id }
+                });
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="bi bi-file-earmark-text"></i>
+                            <p>您还没有提交过举报</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.map(report => {
+                    const statusMap = {
+                        'pending': { text: '待审核', class: 'warning' },
+                        'approved': { text: '已通过', class: 'success' },
+                        'rejected': { text: '已驳回', class: 'danger' }
+                    };
+                    const status = statusMap[report.status] || statusMap['pending'];
+                    const createdAt = new Date(report.created_at).toLocaleString('zh-CN');
+
+                    return `
+                        <div class="credit-card">
+                            <div class="credit-card-header">
+                                <div>
+                                    <strong>举报 #${report.report_id}</strong>
+                                    <span class="text-muted ms-2">${report.reported_student_id}</span>
+                                </div>
+                                <span class="badge bg-${status.class}">${status.text}</span>
+                            </div>
+                            <div>
+                                <p class="mb-1"><strong>举报原因：</strong>${report.reason}</p>
+                                <p class="mb-1"><strong>详细描述：</strong>${report.description || '无'}</p>
+                                <p class="mb-1 text-muted"><i class="bi bi-clock"></i> 提交时间：${createdAt}</p>
+                                ${report.admin_note ? `
+                                    <div class="alert alert-info mt-2 mb-0">
+                                        <strong>管理员备注：</strong>${report.admin_note}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载我的举报失败', error);
+                container.innerHTML = '<div class="alert alert-danger">加载失败，请稍后重试</div>';
+            }
+        }
+
+        // 显示举报模态框
+        function showReportModal() {
+            const user_id = localStorage.getItem('user_id');
+            if (!user_id) {
+                alert('请先登录');
+                window.location.href = '/login.html';
+                return;
+            }
+            document.getElementById('reportForm').reset();
+            reportModal.show();
+        }
+
+        // 提交举报
+        async function submitReport() {
+            const studentId = document.getElementById('reportedStudentId').value.trim();
+            const type = document.getElementById('reportType').value;
+            const reason = document.getElementById('reportReason').value;
+            const description = document.getElementById('reportDescription').value.trim();
+            const relatedId = document.getElementById('relatedId').value;
+
+            if (!studentId || !type || !reason || !description) {
+                alert('请填写所有必填项');
+                return;
+            }
+
+            const user_id = localStorage.getItem('user_id');
+
+            try {
+                // 先根据学号查找被举报人ID
+                const userRes = await fetch(`/api/users?student_id=${studentId}`);
+                const userData = await userRes.json();
+                
+                if (!userRes.ok || userData.length === 0) {
+                    alert('未找到该学号的用户');
+                    return;
+                }
+
+                const reported_id = userData[0].user_id;
+
+                // 提交举报
+                const res = await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + user_id
+                    },
+                    body: JSON.stringify({
+                        reported_id,
+                        report_type: type,
+                        related_id: relatedId || null,
+                        reason,
+                        description
+                    })
+                });
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    alert(result.msg);
+                    reportModal.hide();
+                    switchTab('myReports');
+                } else {
+                    alert(result.msg || '提交失败');
+                }
+            } catch (error) {
+                console.error('提交举报失败', error);
+                alert('提交失败，请稍后重试');
+            }
+        }
+    </script>
+</body>
+</html>

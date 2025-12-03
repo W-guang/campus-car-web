@@ -22,6 +22,8 @@
 | **FRONTEND_GUIDE.md** | 前端文件完整解析，包含每个页面的结构、功能、代码位置 | 前端开发者（必读） |
 | **QUICK_REFERENCE.md** | 快速参考手册，帮助快速定位代码和解决问题 | 所有开发者 |
 | **API_REFERENCE.md** | 后端API接口文档，包含所有接口的请求/响应格式 | 前端开发者、后端开发者 |
+| **RENTAL_SYSTEM_GUIDE.md** | 租车系统完善功能说明（预订、双确认、历史记录） | 产品经理、开发者 |
+| **VEHICLE_MANAGEMENT_GUIDE.md** | 车辆管理系统功能说明（我的车辆、申请注册、状态跟踪） | 产品经理、开发者 |
 | **FILE_CLEANUP.md** | 废弃文件清理建议（post.html、takeService.html说明） | 项目维护者 |
 
 ---
@@ -299,6 +301,8 @@ node server.js
 - [前端完整指南](./FRONTEND_GUIDE.md)
 - [快速参考手册](./QUICK_REFERENCE.md)
 - [API接口文档](./API_REFERENCE.md)
+- [租车系统功能说明](./RENTAL_SYSTEM_GUIDE.md)
+- [车辆管理功能说明](./VEHICLE_MANAGEMENT_GUIDE.md)
 - [文件清理建议](./FILE_CLEANUP.md)
 
 **祝开发顺利！** 🚀

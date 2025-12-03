@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 const cors = require('cors');
 const path = require('path');
 const app = express();
@@ -13,20 +13,17 @@ const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: 'mysql102322',
-    database: 'campus_car_share'
-}).promise();
-
-// 认证中间件
-app.use((req, res, next) => {
-  const auth = req.headers.authorization;
-  if (auth && auth.startsWith('Bearer ')) {
-    req.currentUser = { user_id: auth.split(' ')[1] };
-  }
-  next();
+    database: 'campus_car_share',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
 function getUserIdFromRequest(req) {
-  const token = req.headers.authorization?.split(' ')[1];
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return null;
+  
+  const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
   const userId = parseInt(token, 10);
   return Number.isNaN(userId) ? null : userId;
 }
@@ -36,13 +33,13 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-// 获取已审核车辆
+// 获取已审核车辆（可租用的车辆）
 app.get('/api/vehicles', async (req, res) => {
     const [rows] = await pool.query(`
-        SELECT v.*, u.name as owner_name 
+        SELECT v.*, u.name as owner_name, u.phone as owner_phone
         FROM vehicles v 
         JOIN users u ON v.owner_id = u.user_id 
-        WHERE v.is_verified = 1
+        WHERE v.is_verified = 1 AND v.status = 'listed'
     `);
     res.json(rows);
 });
@@ -50,11 +47,24 @@ app.get('/api/vehicles', async (req, res) => {
 // 登录
 app.post('/api/login', async (req, res) => {
     const { student_id, password } = req.body;
-    const [rows] = await pool.query('SELECT user_id, student_id, name, role FROM users WHERE student_id = ? AND password = ?', [student_id, password]);
-    if (rows.length > 0) {
-        res.json({ msg: '登录成功', user: rows[0] });
-    } else {
-        res.status(401).json({ msg: '学号或密码错误' });
+    
+    console.log('登录请求:', { student_id, password: '***' });
+    
+    try {
+        const [rows] = await pool.query('SELECT user_id, student_id, name, role FROM users WHERE student_id = ? AND password = ?', [student_id, password]);
+        
+        console.log('查询结果:', rows.length > 0 ? '找到用户' : '未找到用户');
+        
+        if (rows.length > 0) {
+            console.log('登录成功:', rows[0]);
+            res.json({ msg: '登录成功', user: rows[0] });
+        } else {
+            console.log('登录失败: 学号或密码错误');
+            res.status(401).json({ msg: '学号或密码错误' });
+        }
+    } catch (error) {
+        console.error('登录错误:', error);
+        res.status(500).json({ msg: '服务器错误' });
     }
 });
 
@@ -65,9 +75,10 @@ app.post('/api/register', async (req, res) => {
         await pool.query('INSERT INTO users (student_id, name, password) VALUES (?, ?, ?)', [student_id, name, password]);
         res.json({ msg: '注册成功，待审核' });
     } catch (e) {
-        res.status(400).json({ msg: '学号已存在' });
+        res.status(500).json({ msg: '注册失败：' + e.message });
     }
 });
+
 
 // 获取个人资料
 app.get('/api/profile', async (req, res) => {
@@ -130,34 +141,26 @@ app.put('/api/change-password', async (req, res) => {
     return res.status(401).json({ msg: '请先登录' });
   }
 
-  const { currentPassword, newPassword } = req.body;
-
-  // 参数验证
-  if (!currentPassword || !newPassword) {
-    return res.status(400).json({ msg: '请填写所有密码字段' });
+  const { oldPassword, newPassword } = req.body;
+  
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ msg: '请填写完整信息' });
   }
 
   if (newPassword.length < 6) {
     return res.status(400).json({ msg: '新密码长度至少6位' });
   }
 
-  if (currentPassword === newPassword) {
-    return res.status(400).json({ msg: '新密码不能与当前密码相同' });
-  }
-
   try {
-    // 查询当前用户的密码
-    const [rows] = await pool.query('SELECT password FROM users WHERE user_id = ?', [user_id]);
+    // 验证旧密码
+    const [user] = await pool.query('SELECT password FROM users WHERE user_id = ?', [user_id]);
     
-    if (rows.length === 0) {
+    if (user.length === 0) {
       return res.status(404).json({ msg: '用户不存在' });
     }
 
-    const user = rows[0];
-
-    // 验证当前密码是否正确（这里简单对比，实际应用应使用bcrypt）
-    if (user.password !== currentPassword) {
-      return res.status(400).json({ msg: '当前密码不正确' });
+    if (user[0].password !== oldPassword) {
+      return res.status(400).json({ msg: '原密码错误' });
     }
 
     // 更新密码
@@ -191,34 +194,369 @@ app.post('/api/admin/approve', async (req, res) => {
     }
 });
 
-// 出租车辆
+// 出租车辆（更新车辆为待租用状态）
 app.post('/api/rent', async (req, res) => {
-  const { type, price_per_hour, location_desc, lng, lat } = req.body;
-  const owner_id = parseInt(req.headers.authorization?.split(' ')[1], 10);
+  const { vehicle_id, location_desc, price_per_hour, lng, lat } = req.body;
+  const owner_id = getUserIdFromRequest(req);
 
-  if (!owner_id || isNaN(owner_id)) {
+  if (!owner_id) {
     return res.status(401).json({ msg: '请先登录' });
   }
 
+  if (!vehicle_id || !location_desc || !price_per_hour) {
+    return res.status(400).json({ msg: '请填写完整信息' });
+  }
+
   try {
-    await pool.query(
-      `INSERT INTO vehicles 
-       (owner_id, type, location_desc, price_per_hour, is_verified, lng, lat) 
-       VALUES (?, ?, ?, ?, 0, ?, ?)`,
-      [owner_id, type, location_desc, price_per_hour, lng, lat]
+    // 验证车辆归属和审核状态
+    const [vehicle] = await pool.query(
+      'SELECT owner_id, is_verified, status FROM vehicles WHERE vehicle_id = ?',
+      [vehicle_id]
     );
-    res.json({ msg: '出租成功，待管理员审核' });
+
+    if (vehicle.length === 0) {
+      return res.status(404).json({ msg: '车辆不存在' });
+    }
+
+    if (vehicle[0].owner_id != owner_id) {
+      return res.status(403).json({ msg: '无权操作此车辆' });
+    }
+
+    if (vehicle[0].is_verified != 1) {
+      return res.status(400).json({ msg: '该车辆未通过审核，无法出租' });
+    }
+
+    if (vehicle[0].status === 'rented') {
+      return res.status(400).json({ msg: '该车辆正在被租用中' });
+    }
+
+    // 更新车辆状态为待租用，并更新位置和价格
+    await pool.query(
+      `UPDATE vehicles 
+       SET status = 'listed', location_desc = ?, price_per_hour = ?, lng = ?, lat = ? 
+       WHERE vehicle_id = ?`,
+      [location_desc, price_per_hour, lng, lat, vehicle_id]
+    );
+
+    res.json({ msg: '出租成功！车辆已上架' });
   } catch (e) {
     console.error('出租失败', e);
     res.status(500).json({ msg: '出租失败：' + e.message });
   }
 });
 
-// 获取我的出租
+// 创建车辆（新接口，支持描述和车牌号）
+app.post('/api/vehicles', async (req, res) => {
+  console.log('收到车辆注册请求:', req.body);
+  console.log('Authorization头:', req.headers.authorization);
+  
+  const { plate_number, type, description } = req.body;
+  const owner_id = getUserIdFromRequest(req);
+
+  console.log('解析的owner_id:', owner_id);
+
+  if (!owner_id) {
+    console.log('用户未登录');
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  if (!plate_number || !type) {
+    console.log('参数不完整:', { plate_number, type });
+    return res.status(400).json({ msg: '请填写车牌号和车辆类型' });
+  }
+
+  try {
+    // 检查用户是否被封禁
+    const [user] = await pool.query(
+      'SELECT is_banned, ban_until FROM users WHERE user_id = ?',
+      [owner_id]
+    );
+    
+    if (user.length > 0) {
+      const now = new Date();
+      if (user[0].is_banned || (user[0].ban_until && new Date(user[0].ban_until) > now)) {
+        return res.status(403).json({ msg: '您已被限制上架车辆功能，请联系管理员' });
+      }
+    }
+    
+    // 插入车辆基本信息，状态默认为idle，is_verified为0（待审核）
+    let query = `INSERT INTO vehicles 
+      (owner_id, plate_number, type, description, status, is_verified) 
+      VALUES (?, ?, ?, ?, 'idle', 0)`;
+    let params = [owner_id, plate_number, type, description || null];
+
+    console.log('执行SQL:', query);
+    console.log('参数:', params);
+
+    await pool.query(query, params);
+    console.log('车辆注册成功');
+    res.json({ msg: '车辆注册申请已提交，待管理员审核' });
+  } catch (e) {
+    console.error('注册失败详细错误:', e);
+    res.status(500).json({ msg: '注册失败：' + e.message });
+  }
+});
+
+// 获取我的出租（旧接口，保留兼容）
 app.get('/api/my-rentals', async (req, res) => {
   const user_id = req.query.user_id;
   const [rows] = await pool.query('SELECT * FROM vehicles WHERE owner_id = ?', [user_id]);
   res.json(rows);
+});
+
+// 获取我的车辆列表
+app.get('/api/vehicles/my', async (req, res) => {
+  console.log('收到获取车辆列表请求');
+  console.log('Authorization头:', req.headers.authorization);
+  
+  const user_id = getUserIdFromRequest(req);
+  const { verified_only } = req.query;
+
+  console.log('解析的user_id:', user_id);
+  console.log('verified_only参数:', verified_only);
+
+  if (!user_id) {
+    console.log('用户未登录');
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  try {
+    let query = 'SELECT * FROM vehicles WHERE owner_id = ?';
+    let params = [user_id];
+
+    // 如果只要已审核通过的车辆
+    if (verified_only === 'true') {
+      query += ' AND is_verified = 1';
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    console.log('执行查询SQL:', query);
+    console.log('查询参数:', params);
+
+    const [rows] = await pool.query(query, params);
+    console.log('查询结果数量:', rows.length);
+    res.json(rows);
+  } catch (e) {
+    console.error('获取车辆列表失败详细错误:', e);
+    res.status(500).json({ msg: '获取失败：' + e.message });
+  }
+});
+
+// 更新车辆信息（修改价格）
+app.put('/api/vehicles/:id', async (req, res) => {
+  const vehicle_id = req.params.id;
+  const { price_per_hour } = req.body;
+  const user_id = getUserIdFromRequest(req);
+
+  if (!user_id) {
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  if (!price_per_hour || price_per_hour < 1 || price_per_hour > 50) {
+    return res.status(400).json({ msg: '租金需在1-50元之间' });
+  }
+
+  try {
+    // 验证权限
+    const [vehicle] = await pool.query(
+      'SELECT owner_id FROM vehicles WHERE vehicle_id = ?',
+      [vehicle_id]
+    );
+
+    if (vehicle.length === 0) {
+      return res.status(404).json({ msg: '车辆不存在' });
+    }
+
+    if (vehicle[0].owner_id != user_id) {
+      return res.status(403).json({ msg: '无权修改此车辆' });
+    }
+
+    // 更新价格
+    await pool.query(
+      'UPDATE vehicles SET price_per_hour = ? WHERE vehicle_id = ?',
+      [price_per_hour, vehicle_id]
+    );
+
+    res.json({ msg: '更新成功' });
+  } catch (e) {
+    console.error('更新车辆失败', e);
+    res.status(500).json({ msg: '更新失败：' + e.message });
+  }
+});
+
+// 删除车辆
+app.delete('/api/vehicles/:id', async (req, res) => {
+  const vehicle_id = req.params.id;
+  const user_id = getUserIdFromRequest(req);
+
+  if (!user_id) {
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  try {
+    // 验证权限
+    const [vehicle] = await pool.query(
+      'SELECT owner_id FROM vehicles WHERE vehicle_id = ?',
+      [vehicle_id]
+    );
+
+    if (vehicle.length === 0) {
+      return res.status(404).json({ msg: '车辆不存在' });
+    }
+
+    if (vehicle[0].owner_id != user_id) {
+      return res.status(403).json({ msg: '无权删除此车辆' });
+    }
+
+    // 检查是否有进行中的订单
+    const [orders] = await pool.query(
+      'SELECT COUNT(*) as count FROM orders WHERE vehicle_id = ? AND status IN ("pending", "confirmed")',
+      [vehicle_id]
+    );
+
+    if (orders[0].count > 0) {
+      return res.status(400).json({ msg: '该车辆有进行中的订单，无法删除' });
+    }
+
+    // 删除车辆
+    await pool.query('DELETE FROM vehicles WHERE vehicle_id = ?', [vehicle_id]);
+
+    res.json({ msg: '删除成功' });
+  } catch (e) {
+    console.error('删除车辆失败', e);
+    res.status(500).json({ msg: '删除失败：' + e.message });
+  }
+});
+
+// 下架车辆（将listed改为idle）
+app.post('/api/vehicles/:id/unlist', async (req, res) => {
+  const vehicle_id = req.params.id;
+  const user_id = getUserIdFromRequest(req);
+
+  if (!user_id) {
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  try {
+    // 验证权限
+    const [vehicle] = await pool.query(
+      'SELECT owner_id, status FROM vehicles WHERE vehicle_id = ?',
+      [vehicle_id]
+    );
+
+    if (vehicle.length === 0) {
+      return res.status(404).json({ msg: '车辆不存在' });
+    }
+
+    if (vehicle[0].owner_id != user_id) {
+      return res.status(403).json({ msg: '无权操作此车辆' });
+    }
+
+    if (vehicle[0].status !== 'listed') {
+      return res.status(400).json({ msg: '只能下架已上架的车辆' });
+    }
+
+    // 检查是否有进行中的订单
+    const [orders] = await pool.query(
+      'SELECT COUNT(*) as count FROM orders WHERE vehicle_id = ? AND status IN ("pending", "confirmed")',
+      [vehicle_id]
+    );
+
+    if (orders[0].count > 0) {
+      return res.status(400).json({ msg: '该车辆有进行中的订单，无法下架' });
+    }
+
+    // 下架车辆
+    await pool.query(
+      'UPDATE vehicles SET status = "idle" WHERE vehicle_id = ?',
+      [vehicle_id]
+    );
+
+    res.json({ msg: '车辆已下架' });
+  } catch (e) {
+    console.error('下架失败', e);
+    res.status(500).json({ msg: '下架失败：' + e.message });
+  }
+});
+
+// 更新车辆默认备注
+app.put('/api/vehicles/:id/remark', async (req, res) => {
+  const vehicle_id = req.params.id;
+  const { description } = req.body;
+  const user_id = getUserIdFromRequest(req);
+
+  if (!user_id) {
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  try {
+    // 验证权限
+    const [vehicle] = await pool.query(
+      'SELECT owner_id FROM vehicles WHERE vehicle_id = ?',
+      [vehicle_id]
+    );
+
+    if (vehicle.length === 0) {
+      return res.status(404).json({ msg: '车辆不存在' });
+    }
+
+    if (vehicle[0].owner_id != user_id) {
+      return res.status(403).json({ msg: '无权修改此车辆' });
+    }
+
+    // 更新描述
+    await pool.query(
+      'UPDATE vehicles SET description = ? WHERE vehicle_id = ?',
+      [description || null, vehicle_id]
+    );
+
+    res.json({ msg: '默认备注保存成功' });
+  } catch (e) {
+    console.error('更新备注失败', e);
+    res.status(500).json({ msg: '保存失败：' + e.message });
+  }
+});
+
+// 重新申请审核
+app.post('/api/vehicles/:id/reapply', async (req, res) => {
+  const vehicle_id = req.params.id;
+  const user_id = getUserIdFromRequest(req);
+
+  if (!user_id) {
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  try {
+    // 验证权限
+    const [vehicle] = await pool.query(
+      'SELECT owner_id, is_verified FROM vehicles WHERE vehicle_id = ?',
+      [vehicle_id]
+    );
+
+    if (vehicle.length === 0) {
+      return res.status(404).json({ msg: '车辆不存在' });
+    }
+
+    if (vehicle[0].owner_id != user_id) {
+      return res.status(403).json({ msg: '无权操作此车辆' });
+    }
+
+    if (vehicle[0].is_verified != 2) {
+      return res.status(400).json({ msg: '只有被拒绝的车辆可以重新申请' });
+    }
+
+    // 将状态改为待审核
+    await pool.query(
+      'UPDATE vehicles SET is_verified = 0 WHERE vehicle_id = ?',
+      [vehicle_id]
+    );
+
+    res.json({ msg: '已重新提交审核' });
+  } catch (e) {
+    console.error('重新申请失败', e);
+    res.status(500).json({ msg: '操作失败：' + e.message });
+  }
 });
 
 // 撤回车辆
@@ -308,10 +646,13 @@ app.get('/api/posts', async (req, res) => {
   try {
     const { type } = req.query;
     let query = `
-      SELECT p.*, u.name as author_name, u.student_id as author_student_id
+      SELECT p.*, u.name as author_name, u.student_id as author_student_id,
+             (SELECT COUNT(*) FROM post_accepts pa 
+              WHERE pa.post_id = p.post_id 
+              AND pa.status IN ('pending', 'accepted')) as has_active_accept
       FROM posts p
       JOIN users u ON p.user_id = u.user_id
-      WHERE p.is_verified = 1
+      WHERE p.is_verified = 1 AND p.status = 'open'
     `;
     const params = [];
     
@@ -322,9 +663,6 @@ app.get('/api/posts', async (req, res) => {
       } else if (type === 'takeaway') {
         query += ' AND p.type = ?';
         params.push('daigou_food');
-      } else if (type === 'carShare') {
-        query += ' AND p.type = ? AND p.route IS NOT NULL';
-        params.push('share');
       } else if (type === 'experience') {
         query += ' AND p.type = ? AND p.route IS NULL';
         params.push('share');
@@ -351,6 +689,19 @@ app.post('/api/posts', async (req, res) => {
   }
 
   try {
+    // 检查用户是否被封禁
+    const [user] = await pool.query(
+      'SELECT is_banned, ban_until FROM users WHERE user_id = ?',
+      [user_id]
+    );
+    
+    if (user.length > 0) {
+      const now = new Date();
+      if (user[0].is_banned || (user[0].ban_until && new Date(user[0].ban_until) > now)) {
+        return res.status(403).json({ msg: '您已被限制发布帖子功能，请联系管理员' });
+      }
+    }
+    
     await pool.query(
       `INSERT INTO posts (user_id, type, title, content, reward, pickup_location, deliver_location, deadline, route, share_time, share_person, remark, is_verified)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
@@ -575,14 +926,18 @@ app.post('/api/orders', async (req, res) => {
     return res.status(401).json({ msg: '请先登录' });
   }
 
-  if (!vehicle_id || !hours || hours <= 0) {
-    return res.status(400).json({ msg: '参数错误' });
+  if (!vehicle_id || !hours) {
+    return res.status(400).json({ msg: '请填写完整信息' });
+  }
+
+  if (hours < 1 || hours > 72) {
+    return res.status(400).json({ msg: '租用时长需在1-72小时之间' });
   }
 
   try {
     // 获取车辆信息
     const [vehicle] = await pool.query(
-      'SELECT owner_id, price_per_hour, is_verified FROM vehicles WHERE vehicle_id = ?',
+      'SELECT owner_id, price_per_hour, is_verified, status FROM vehicles WHERE vehicle_id = ?',
       [vehicle_id]
     );
 
@@ -591,36 +946,37 @@ app.post('/api/orders', async (req, res) => {
     }
 
     if (vehicle[0].is_verified !== 1) {
-      return res.status(400).json({ msg: '车辆未通过审核' });
+      return res.status(400).json({ msg: '该车辆未通过审核' });
+    }
+
+    if (vehicle[0].status !== 'listed') {
+      return res.status(400).json({ msg: '该车辆未上架或已被租用' });
     }
 
     if (vehicle[0].owner_id == renter_id) {
       return res.status(400).json({ msg: '不能租用自己的车辆' });
     }
 
-    const total_fee = (vehicle[0].price_per_hour * hours).toFixed(2);
+    // 检查是否已有进行中的订单
+    const [existingOrders] = await pool.query(
+      'SELECT COUNT(*) as count FROM orders WHERE vehicle_id = ? AND status IN ("pending", "confirmed")',
+      [vehicle_id]
+    );
+
+    if (existingOrders[0].count > 0) {
+      return res.status(400).json({ msg: '该车辆已被租用' });
+    }
+
+    const total_fee = vehicle[0].price_per_hour * hours;
 
     // 创建订单
-    const [result] = await pool.query(
-      'INSERT INTO orders (vehicle_id, renter_id, owner_id, hours, total_fee, status) VALUES (?, ?, ?, ?, ?, "pending")',
+    await pool.query(
+      `INSERT INTO orders (vehicle_id, renter_id, owner_id, hours, total_fee, status) 
+       VALUES (?, ?, ?, ?, ?, 'pending')`,
       [vehicle_id, renter_id, vehicle[0].owner_id, hours, total_fee]
     );
 
-    // 获取车主信息
-    const [owner] = await pool.query(
-      'SELECT name, phone FROM users WHERE user_id = ?',
-      [vehicle[0].owner_id]
-    );
-
-    res.json({ 
-      msg: '订单创建成功', 
-      order_id: result.insertId,
-      total_fee,
-      owner_info: {
-        name: owner[0].name,
-        phone: owner[0].phone
-      }
-    });
+    res.json({ msg: '订单创建成功，等待车主确认' });
   } catch (e) {
     console.error('创建订单失败', e);
     res.status(500).json({ msg: '创建订单失败：' + e.message });
@@ -647,7 +1003,7 @@ app.get('/api/orders/my', async (req, res) => {
         FROM orders o
         JOIN vehicles v ON o.vehicle_id = v.vehicle_id
         JOIN users u ON o.owner_id = u.user_id
-        WHERE o.renter_id = ? AND o.status IN ('pending', 'confirmed')
+        WHERE o.renter_id = ? AND o.status IN ('pending', 'confirmed', 'waiting_owner_confirm', 'waiting_renter_confirm')
         ORDER BY o.created_at DESC
       `;
       params = [user_id];
@@ -658,7 +1014,7 @@ app.get('/api/orders/my', async (req, res) => {
         FROM orders o
         JOIN vehicles v ON o.vehicle_id = v.vehicle_id
         JOIN users u ON o.renter_id = u.user_id
-        WHERE o.owner_id = ? AND o.status IN ('pending', 'confirmed')
+        WHERE o.owner_id = ? AND o.status IN ('pending', 'confirmed', 'waiting_owner_confirm', 'waiting_renter_confirm')
         ORDER BY o.created_at DESC
       `;
       params = [user_id];
@@ -705,22 +1061,36 @@ app.post('/api/orders/confirm', async (req, res) => {
   }
 
   try {
-    const [order] = await pool.query('SELECT owner_id, status FROM orders WHERE order_id = ?', [order_id]);
-    
+    // 验证订单归属
+    const [order] = await pool.query(
+      'SELECT owner_id, vehicle_id, status FROM orders WHERE order_id = ?',
+      [order_id]
+    );
+
     if (order.length === 0) {
       return res.status(404).json({ msg: '订单不存在' });
     }
 
     if (order[0].owner_id != user_id) {
-      return res.status(403).json({ msg: '无权限' });
+      return res.status(403).json({ msg: '无权操作此订单' });
     }
 
     if (order[0].status !== 'pending') {
       return res.status(400).json({ msg: '订单状态不正确' });
     }
 
-    await pool.query('UPDATE orders SET status = "confirmed" WHERE order_id = ?', [order_id]);
-    res.json({ msg: '订单确认成功' });
+    // 确认订单并更新车辆状态为rented
+    await pool.query(
+      'UPDATE orders SET status = "confirmed" WHERE order_id = ?',
+      [order_id]
+    );
+
+    await pool.query(
+      'UPDATE vehicles SET status = "rented" WHERE vehicle_id = ?',
+      [order[0].vehicle_id]
+    );
+
+    res.json({ msg: '订单确认成功，车辆已出租' });
   } catch (e) {
     console.error('确认订单失败', e);
     res.status(500).json({ msg: '确认订单失败：' + e.message });
@@ -737,29 +1107,75 @@ app.post('/api/orders/complete', async (req, res) => {
   }
 
   try {
+    // 验证订单归属（车主或租用者都可以完成）
     const [order] = await pool.query(
-      'SELECT owner_id, renter_id, status FROM orders WHERE order_id = ?',
+      'SELECT owner_id, renter_id, vehicle_id, status FROM orders WHERE order_id = ?',
       [order_id]
     );
-    
+
     if (order.length === 0) {
       return res.status(404).json({ msg: '订单不存在' });
     }
 
-    // 车主或租客都可以完成订单
     if (order[0].owner_id != user_id && order[0].renter_id != user_id) {
-      return res.status(403).json({ msg: '无权限' });
+      return res.status(403).json({ msg: '无权操作此订单' });
     }
 
-    if (order[0].status !== 'confirmed') {
-      return res.status(400).json({ msg: '订单未确认，无法完成' });
-    }
+    const isOwner = order[0].owner_id == user_id;
+    const isRenter = order[0].renter_id == user_id;
+    const currentStatus = order[0].status;
 
-    await pool.query(
-      'UPDATE orders SET status = "completed", completed_at = NOW() WHERE order_id = ?',
-      [order_id]
-    );
-    res.json({ msg: '订单完成' });
+    // 根据当前状态和用户身份决定下一步操作
+    if (currentStatus === 'confirmed') {
+      // 订单已确认，第一方点击完成
+      let newStatus;
+      let message;
+      
+      if (isRenter) {
+        // 租客点击完成，等待车主确认
+        newStatus = 'waiting_owner_confirm';
+        message = '已提交完成请求，等待车主确认';
+      } else {
+        // 车主点击完成，等待租客确认
+        newStatus = 'waiting_renter_confirm';
+        message = '已提交完成请求，等待租客确认';
+      }
+      
+      await pool.query(
+        'UPDATE orders SET status = ? WHERE order_id = ?',
+        [newStatus, order_id]
+      );
+      
+      res.json({ msg: message, status: newStatus });
+    } else if (currentStatus === 'waiting_owner_confirm' && isOwner) {
+      // 车主确认租客的完成请求
+      await pool.query(
+        'UPDATE orders SET status = "completed", completed_at = NOW() WHERE order_id = ?',
+        [order_id]
+      );
+      
+      await pool.query(
+        'UPDATE vehicles SET status = "idle" WHERE vehicle_id = ?',
+        [order[0].vehicle_id]
+      );
+      
+      res.json({ msg: '订单已完成，车辆已归还', status: 'completed' });
+    } else if (currentStatus === 'waiting_renter_confirm' && isRenter) {
+      // 租客确认车主的完成请求
+      await pool.query(
+        'UPDATE orders SET status = "completed", completed_at = NOW() WHERE order_id = ?',
+        [order_id]
+      );
+      
+      await pool.query(
+        'UPDATE vehicles SET status = "idle" WHERE vehicle_id = ?',
+        [order[0].vehicle_id]
+      );
+      
+      res.json({ msg: '订单已完成，车辆已归还', status: 'completed' });
+    } else {
+      return res.status(400).json({ msg: '订单状态不正确或无权限操作' });
+    }
   } catch (e) {
     console.error('完成订单失败', e);
     res.status(500).json({ msg: '完成订单失败：' + e.message });
@@ -777,7 +1193,7 @@ app.post('/api/orders/cancel', async (req, res) => {
 
   try {
     const [order] = await pool.query(
-      'SELECT owner_id, renter_id, status FROM orders WHERE order_id = ?',
+      'SELECT owner_id, renter_id, vehicle_id, status FROM orders WHERE order_id = ?',
       [order_id]
     );
     
@@ -794,7 +1210,14 @@ app.post('/api/orders/cancel', async (req, res) => {
       return res.status(400).json({ msg: '订单已完成或已取消' });
     }
 
+    // 取消订单并恢复车辆状态
     await pool.query('UPDATE orders SET status = "cancelled" WHERE order_id = ?', [order_id]);
+    
+    // 如果订单已确认，需要恢复车辆状态为idle
+    if (order[0].status === 'confirmed') {
+      await pool.query('UPDATE vehicles SET status = "idle" WHERE vehicle_id = ?', [order[0].vehicle_id]);
+    }
+    
     res.json({ msg: '订单已取消' });
   } catch (e) {
     console.error('取消订单失败', e);
@@ -875,6 +1298,13 @@ app.post('/api/posts/complete-accept', async (req, res) => {
       'UPDATE post_accepts SET status = "completed", completed_at = NOW() WHERE accept_id = ?',
       [accept_id]
     );
+    
+    // 同时更新帖子状态为已完成
+    await pool.query(
+      'UPDATE posts SET status = "completed" WHERE post_id = ?',
+      [accept[0].post_id]
+    );
+    
     res.json({ msg: '订单完成' });
   } catch (e) {
     console.error('完成订单失败', e);
@@ -918,6 +1348,285 @@ app.post('/api/posts/cancel-accept', async (req, res) => {
   } catch (e) {
     console.error('取消接单失败', e);
     res.status(500).json({ msg: '取消接单失败：' + e.message });
+  }
+});
+
+// ==================== 举报与安全系统 API ====================
+
+// 根据学号查询用户（用于举报时查找用户）
+app.get('/api/users', async (req, res) => {
+  const { student_id } = req.query;
+  
+  if (!student_id) {
+    return res.status(400).json({ msg: '请提供学号' });
+  }
+
+  try {
+    const [users] = await pool.query(
+      'SELECT user_id, name, student_id FROM users WHERE student_id = ?',
+      [student_id]
+    );
+    res.json(users);
+  } catch (e) {
+    console.error('查询用户失败', e);
+    res.status(500).json({ msg: '查询用户失败：' + e.message });
+  }
+});
+
+// 提交举报
+app.post('/api/reports', async (req, res) => {
+  const { reported_id, report_type, related_id, reason, description, evidence_urls } = req.body;
+  const reporter_id = getUserIdFromRequest(req);
+
+  if (!reporter_id) {
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  if (reporter_id == reported_id) {
+    return res.status(400).json({ msg: '不能举报自己' });
+  }
+
+  try {
+    const evidence_json = evidence_urls ? JSON.stringify(evidence_urls) : null;
+    
+    await pool.query(
+      `INSERT INTO reports (reporter_id, reported_id, report_type, related_id, reason, description, evidence_urls) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [reporter_id, reported_id, report_type, related_id, reason, description, evidence_json]
+    );
+    
+    res.json({ msg: '举报提交成功，等待管理员审核' });
+  } catch (e) {
+    console.error('提交举报失败', e);
+    res.status(500).json({ msg: '提交举报失败：' + e.message });
+  }
+});
+
+// 获取我的举报列表
+app.get('/api/reports/my', async (req, res) => {
+  const user_id = getUserIdFromRequest(req);
+  
+  if (!user_id) {
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT r.*, u.name as reported_name, u.student_id as reported_student_id
+       FROM reports r
+       JOIN users u ON r.reported_id = u.user_id
+       WHERE r.reporter_id = ?
+       ORDER BY r.created_at DESC`,
+      [user_id]
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error('获取举报列表失败', e);
+    res.status(500).json({ msg: '获取举报列表失败：' + e.message });
+  }
+});
+
+// 管理员获取待审核举报列表
+app.get('/api/admin/reports/pending', async (req, res) => {
+  const user_id = getUserIdFromRequest(req);
+  
+  if (!user_id) {
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  try {
+    // 验证管理员权限
+    const [user] = await pool.query('SELECT role FROM users WHERE user_id = ?', [user_id]);
+    if (user.length === 0 || user[0].role !== 'admin') {
+      return res.status(403).json({ msg: '无权限访问' });
+    }
+
+    const [rows] = await pool.query(
+      `SELECT r.*, 
+              reporter.name as reporter_name, reporter.student_id as reporter_student_id, reporter.phone as reporter_phone,
+              reported.name as reported_name, reported.student_id as reported_student_id, reported.phone as reported_phone,
+              reported.report_count, reported.blackroom_count, reported.is_banned
+       FROM reports r
+       JOIN users reporter ON r.reporter_id = reporter.user_id
+       JOIN users reported ON r.reported_id = reported.user_id
+       WHERE r.status = 'pending'
+       ORDER BY r.created_at ASC`
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error('获取待审核举报失败', e);
+    res.status(500).json({ msg: '获取待审核举报失败：' + e.message });
+  }
+});
+
+// 管理员审核举报
+app.post('/api/admin/reports/review', async (req, res) => {
+  const { report_id, action, admin_note } = req.body; // action: 'approve' or 'reject'
+  const admin_id = getUserIdFromRequest(req);
+
+  if (!admin_id) {
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  try {
+    // 验证管理员权限
+    const [admin] = await pool.query('SELECT role FROM users WHERE user_id = ?', [admin_id]);
+    if (admin.length === 0 || admin[0].role !== 'admin') {
+      return res.status(403).json({ msg: '无权限操作' });
+    }
+
+    // 获取举报信息
+    const [report] = await pool.query('SELECT * FROM reports WHERE report_id = ?', [report_id]);
+    if (report.length === 0) {
+      return res.status(404).json({ msg: '举报不存在' });
+    }
+
+    if (report[0].status !== 'pending') {
+      return res.status(400).json({ msg: '该举报已被处理' });
+    }
+
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      const status = action === 'approve' ? 'approved' : 'rejected';
+      
+      // 更新举报状态
+      await connection.query(
+        'UPDATE reports SET status = ?, admin_note = ?, reviewed_by = ?, reviewed_at = NOW() WHERE report_id = ?',
+        [status, admin_note, admin_id, report_id]
+      );
+
+      // 如果审核通过，增加被举报人的举报次数
+      if (action === 'approve') {
+        await connection.query(
+          'UPDATE users SET report_count = report_count + 1 WHERE user_id = ?',
+          [report[0].reported_id]
+        );
+
+        // 检查是否达到5次举报，需要进入小黑屋
+        const [user] = await connection.query(
+          'SELECT report_count, blackroom_count FROM users WHERE user_id = ?',
+          [report[0].reported_id]
+        );
+
+        if (user[0].report_count >= 5) {
+          const blackroomCount = user[0].blackroom_count + 1;
+          const isPermanent = blackroomCount >= 3;
+          const releaseTime = isPermanent ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7天后
+
+          // 插入小黑屋记录
+          await connection.query(
+            `INSERT INTO blackroom_records (user_id, enter_count, reason, release_time, is_permanent)
+             VALUES (?, ?, ?, ?, ?)`,
+            [report[0].reported_id, blackroomCount, '累计被举报5次', releaseTime, isPermanent]
+          );
+
+          // 更新用户状态
+          await connection.query(
+            'UPDATE users SET blackroom_count = ?, is_banned = ?, ban_until = ?, report_count = 0 WHERE user_id = ?',
+            [blackroomCount, isPermanent ? 1 : 0, releaseTime, report[0].reported_id]
+          );
+        }
+      }
+
+      await connection.commit();
+      res.json({ 
+        msg: action === 'approve' ? '举报审核通过' : '举报已驳回',
+        entered_blackroom: action === 'approve' && report[0].report_count >= 4 // 原来4次，加1变5次
+      });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (e) {
+    console.error('审核举报失败', e);
+    res.status(500).json({ msg: '审核举报失败：' + e.message });
+  }
+});
+
+// 获取黑名单列表
+app.get('/api/blacklist', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT DISTINCT 
+              u.user_id,
+              u.name,
+              u.student_id,
+              u.report_count,
+              u.blackroom_count,
+              u.is_banned,
+              u.ban_until,
+              COUNT(DISTINCT r.report_id) as approved_report_count
+       FROM users u
+       INNER JOIN reports r ON u.user_id = r.reported_id AND r.status = 'approved'
+       GROUP BY u.user_id
+       ORDER BY u.report_count DESC, u.blackroom_count DESC`
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error('获取黑名单失败', e);
+    res.status(500).json({ msg: '获取黑名单失败：' + e.message });
+  }
+});
+
+// 获取小黑屋列表
+app.get('/api/blackroom', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT br.*, u.name, u.student_id, u.is_banned
+       FROM blackroom_records br
+       JOIN users u ON br.user_id = u.user_id
+       ORDER BY br.enter_time DESC`
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error('获取小黑屋列表失败', e);
+    res.status(500).json({ msg: '获取小黑屋列表失败：' + e.message });
+  }
+});
+
+// 检查用户是否被封禁
+app.get('/api/user/ban-status', async (req, res) => {
+  const user_id = getUserIdFromRequest(req);
+  
+  if (!user_id) {
+    return res.status(401).json({ msg: '请先登录' });
+  }
+
+  try {
+    const [user] = await pool.query(
+      'SELECT is_banned, ban_until, blackroom_count FROM users WHERE user_id = ?',
+      [user_id]
+    );
+    
+    if (user.length === 0) {
+      return res.status(404).json({ msg: '用户不存在' });
+    }
+
+    const now = new Date();
+    let isBanned = false;
+    let reason = '';
+
+    if (user[0].is_banned) {
+      isBanned = true;
+      reason = '永久封禁';
+    } else if (user[0].ban_until && new Date(user[0].ban_until) > now) {
+      isBanned = true;
+      reason = `临时封禁至 ${new Date(user[0].ban_until).toLocaleString('zh-CN')}`;
+    }
+
+    res.json({
+      is_banned: isBanned,
+      reason: reason,
+      ban_until: user[0].ban_until,
+      blackroom_count: user[0].blackroom_count
+    });
+  } catch (e) {
+    console.error('检查封禁状态失败', e);
+    res.status(500).json({ msg: '检查封禁状态失败：' + e.message });
   }
 });
 

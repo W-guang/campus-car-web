@@ -3,73 +3,112 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>管理员审核 - 校园车辆管理系统</title>
+  <title>管理界面 - 校园车辆管理系统</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   <link rel="stylesheet" href="assets/style.css">
   <style>
-    .navbar-brand {
-      font-size: 1.8rem !important;
-      font-weight: bold;
-      pointer-events: none;
-      cursor: default;
+    .admin-stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border-left: 5px solid #667eea;
+        transition: transform 0.3s;
     }
-    .nav-link {
-      font-size: 1.1rem;
-      margin: 0 8px;
+    .admin-stat-card:hover {
+        transform: translateY(-5px);
     }
-    .pending-section {
-      margin: 20px 0;
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #667eea;
     }
-    .pending-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #eee;
+    .stat-info h3 {
+        margin: 0;
+        font-weight: 800;
+        color: #2d3748;
     }
-    .pending-item:last-child {
-      border-bottom: none;
+    .stat-info p {
+        margin: 0;
+        color: #718096;
+        font-size: 0.9rem;
     }
-    .btn-approve {
-      background: #28a745;
-      color: white;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
+    .table-custom {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
     }
-    .btn-approve:hover {
-      background: #218838;
+    .table-custom thead {
+        background: #f8fafc;
     }
-    .btn-primary {
-      background-color: #4299e1;
-      border-color: #4299e1;
+    .table-custom th {
+        font-weight: 600;
+        color: #64748b;
+        padding: 15px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    .table-custom td {
+        padding: 15px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .nav-pills .nav-link {
+        color: #64748b;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+    }
+    .badge-pending {
+        background: #fff7ed;
+        color: #c2410c;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
     }
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+  <div class="gradient-bg">
+    <div class="g-blob blob-1"></div>
+    <div class="g-blob blob-2"></div>
+    <div class="g-blob blob-3"></div>
+  </div>
+
+  <!-- 顶部导航 -->
+  <nav class="navbar navbar-expand-lg navbar-light fixed-top">
     <div class="container">
-      <a class="navbar-brand text-primary" href="/index.html">校园车辆管理系统</a>
-      <div class="collapse navbar-collapse">
+      <a class="navbar-brand" href="/admin.html">
+        <i class="bi bi-shield-check me-2"></i>管理界面
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto">
-          <li class="nav-item"><a class="nav-link text-dark" href="/index.html">首页</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="/carRent.html">租车</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="/forum.html">论坛</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="/blacklist.html">黑名单</a></li>
         </ul>
         <ul class="navbar-nav">
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-primary" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-              个人中心
+            <a class="nav-link dropdown-toggle fw-bold text-primary" href="#" role="button" data-bs-toggle="dropdown">
+              管理员
             </a>
-            <ul class="dropdown-menu dropdown-menu-end" id="userMenu">
-              <li><a class="dropdown-item" href="/login.html">请先登录</a></li>
+            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg" id="userMenu">
+              <li><a class="dropdown-item" href="/login.html">退出登录</a></li>
             </ul>
           </li>
         </ul>
@@ -77,53 +116,218 @@
     </div>
   </nav>
 
-  <div class="container">
-    <header class="mb-4">
-      <h1>管理员审核中心</h1>
-      <button onclick="location.href='/index.html'" class="btn btn-secondary">返回首页</button>
-    </header>
+  <div style="height: 80px;"></div>
 
-    <section class="pending">
-      <h2>待审核内容</h2>
-      <div id="pending-list">加载中...</div>
-    </section>
+  <div class="container">
+    <div class="main-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold text-dark"><i class="bi bi-speedometer2 me-2"></i>工作台</h4>
+            <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="loadPending()">
+                <i class="bi bi-arrow-clockwise me-1"></i>刷新数据
+            </button>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="admin-stat-card">
+                    <div class="stat-info">
+                        <h3 id="userCount">-</h3>
+                        <p>待审核用户</p>
+                    </div>
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-person-plus-fill"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="admin-stat-card" style="border-left-color: #10b981;">
+                    <div class="stat-info">
+                        <h3 id="vehicleCount">-</h3>
+                        <p>待审核车辆</p>
+                    </div>
+                    <div class="stat-icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-bicycle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="admin-stat-card" style="border-left-color: #f59e0b;">
+                    <div class="stat-info">
+                        <h3 id="postCount">-</h3>
+                        <p>待审核帖子</p>
+                    </div>
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-chat-square-text-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 审核内容区域 -->
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 p-4 pb-0">
+                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pills-users-tab" data-bs-toggle="pill" data-bs-target="#pills-users" type="button">
+                            用户审核 <span class="badge bg-danger rounded-pill ms-1" id="tabUserCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pills-vehicles-tab" data-bs-toggle="pill" data-bs-target="#pills-vehicles" type="button">
+                            车辆审核 <span class="badge bg-danger rounded-pill ms-1" id="tabVehicleCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pills-posts-tab" data-bs-toggle="pill" data-bs-target="#pills-posts" type="button">
+                            帖子审核 <span class="badge bg-danger rounded-pill ms-1" id="tabPostCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pills-reports-tab" data-bs-toggle="pill" data-bs-target="#pills-reports" type="button">
+                            举报审核 <span class="badge bg-danger rounded-pill ms-1" id="tabReportCount">0</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body p-4">
+                <div class="tab-content" id="pills-tabContent">
+                    <!-- 用户审核表格 -->
+                    <div class="tab-pane fade show active" id="pills-users" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>学号</th>
+                                        <th>姓名</th>
+                                        <th>申请时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userTableBody">
+                                    <!-- JS填充 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="userEmpty" class="text-center py-5 text-muted d-none">
+                            <i class="bi bi-check-circle display-4 opacity-50"></i>
+                            <p class="mt-2">暂无待审核用户</p>
+                        </div>
+                    </div>
+
+                    <!-- 车辆审核表格 -->
+                    <div class="tab-pane fade" id="pills-vehicles" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>车辆</th>
+                                        <th>车牌/描述</th>
+                                        <th>位置</th>
+                                        <th>价格</th>
+                                        <th>车主</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vehicleTableBody">
+                                    <!-- JS填充 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="vehicleEmpty" class="text-center py-5 text-muted d-none">
+                            <i class="bi bi-check-circle display-4 opacity-50"></i>
+                            <p class="mt-2">暂无待审核车辆</p>
+                        </div>
+                    </div>
+
+                    <!-- 帖子审核表格 -->
+                    <div class="tab-pane fade" id="pills-posts" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>类型</th>
+                                        <th>标题/内容</th>
+                                        <th>发布人</th>
+                                        <th>赏金</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="postTableBody">
+                                    <!-- JS填充 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="postEmpty" class="text-center py-5 text-muted d-none">
+                            <i class="bi bi-check-circle display-4 opacity-50"></i>
+                            <p class="mt-2">暂无待审核帖子</p>
+                        </div>
+                    </div>
+
+                    <!-- 举报审核表格 -->
+                    <div class="tab-pane fade" id="pills-reports" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>举报人</th>
+                                        <th>被举报人</th>
+                                        <th>类型</th>
+                                        <th>原因</th>
+                                        <th>描述</th>
+                                        <th>当前举报次数</th>
+                                        <th>小黑屋次数</th>
+                                        <th>提交时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportTableBody">
+                                    <!-- JS填充 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="reportEmpty" class="text-center py-5 text-muted d-none">
+                            <i class="bi bi-shield-check display-4 opacity-50"></i>
+                            <p class="mt-2">暂无待审核举报</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // 检查登录状态和权限
     document.addEventListener('DOMContentLoaded', function() {
+      checkAdmin();
+      initMenu();
+      loadPending();
+    });
+
+    function checkAdmin() {
       const token = localStorage.getItem('token');
       const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null');
       
       if (!token || !userInfo || userInfo.role !== 'admin') {
         alert('请先以管理员身份登录');
         window.location.href = '/login.html';
-        return;
       }
-      
-      // 初始化菜单
+    }
+
+    function initMenu() {
       const menuElement = document.getElementById("userMenu");
       menuElement.innerHTML = `
         <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
-        <li><a class="dropdown-item" href="/admin.html">管理员后台</a></li>
+        <li><a class="dropdown-item active" href="/admin.html">管理界面</a></li>
         <li><hr class="dropdown-divider"></li>
         <li><a class="dropdown-item" href="#" onclick="logout()">退出登录</a></li>
       `;
-      
-      document.querySelector('[onclick="logout()"]')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (confirm("确定要退出登录吗？")) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("userInfo");
-          localStorage.removeItem("user_id");
-          window.location.href = "/login.html";
-        }
-      });
-      
-      loadPending();
-    });
-    
+    }
+
     function logout() {
       if (confirm("确定要退出登录吗？")) {
         localStorage.removeItem("token");
@@ -132,58 +336,278 @@
         window.location.href = "/login.html";
       }
     }
-    
+
     async function loadPending() {
-      const res = await fetch('/api/admin/pending');
-      const data = await res.json();
+      try {
+        const res = await fetch('/api/admin/pending');
+        const data = await res.json();
 
-      const html = `
-        <div class="pending-section">
-          <h3>待审核用户 (${data.users.length})</h3>
-          ${data.users.map(u => `
-            <div class="pending-item">
-              <span>${u.student_id} - ${u.name}</span>
-              <button onclick="approve('user', ${u.user_id})" class="btn-approve">通过</button>
+        updateStats(data);
+        renderUsers(data.users);
+        renderVehicles(data.vehicles);
+        renderPosts(data.posts);
+        loadPendingReports();
+      } catch (error) {
+        console.error('加载失败', error);
+        alert('数据加载失败，请检查网络');
+      }
+    }
+
+    // 加载待审核举报
+    async function loadPendingReports() {
+      try {
+        const user_id = localStorage.getItem('user_id');
+        const res = await fetch('/api/admin/reports/pending', {
+          headers: { 'Authorization': 'Bearer ' + user_id }
+        });
+        const reports = await res.json();
+        renderReports(reports);
+      } catch (error) {
+        console.error('加载举报失败', error);
+      }
+    }
+
+    // 渲染举报列表
+    function renderReports(reports) {
+      const tbody = document.getElementById('reportTableBody');
+      const emptyDiv = document.getElementById('reportEmpty');
+      const countBadge = document.getElementById('tabReportCount');
+      
+      countBadge.textContent = reports.length;
+      
+      if (reports.length === 0) {
+        tbody.innerHTML = '';
+        emptyDiv.classList.remove('d-none');
+        return;
+      }
+      
+      emptyDiv.classList.add('d-none');
+      
+      const typeMap = {
+        'order': '订单相关',
+        'post': '帖子相关',
+        'vehicle': '车辆相关',
+        'other': '其他'
+      };
+      
+      tbody.innerHTML = reports.map(r => `
+        <tr>
+          <td><strong>#${r.report_id}</strong></td>
+          <td>
+            <div>${r.reporter_name}</div>
+            <small class="text-muted">${r.reporter_student_id}</small>
+          </td>
+          <td>
+            <div>${r.reported_name}</div>
+            <small class="text-muted">${r.reported_student_id}</small>
+            ${r.is_banned ? '<br><span class="badge bg-dark">已封禁</span>' : ''}
+          </td>
+          <td><span class="badge bg-info">${typeMap[r.report_type] || r.report_type}</span></td>
+          <td>${r.reason}</td>
+          <td>
+            <div style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.description || ''}">
+              ${r.description || '-'}
             </div>
-          `).join('') || '<p>暂无</p>'}
-        </div>
+          </td>
+          <td>
+            <span class="badge ${r.report_count >= 4 ? 'bg-danger' : r.report_count >= 2 ? 'bg-warning' : 'bg-secondary'}">
+              ${r.report_count}次
+            </span>
+          </td>
+          <td>
+            <span class="badge bg-dark">${r.blackroom_count}次</span>
+          </td>
+          <td><small>${new Date(r.created_at).toLocaleString('zh-CN')}</small></td>
+          <td>
+            <button class="btn btn-sm btn-success me-1" onclick="reviewReport(${r.report_id}, 'approve')" title="通过">
+              <i class="bi bi-check-lg"></i> 通过
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="reviewReport(${r.report_id}, 'reject')" title="驳回">
+              <i class="bi bi-x-lg"></i> 驳回
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
 
-        <div class="pending-section">
-          <h3>待审核车辆 (${data.vehicles.length})</h3>
-          ${data.vehicles.map(v => `
-            <div class="pending-item">
-              <span>${v.type === 'ebike' ? '电动车' : '自行车'} - ${v.location_desc}</span>
-              <button onclick="approve('vehicle', ${v.vehicle_id})" class="btn-approve">通过</button>
-            </div>
-          `).join('') || '<p>暂无</p>'}
-        </div>
+    // 审核举报
+    async function reviewReport(reportId, action) {
+      const actionText = action === 'approve' ? '通过' : '驳回';
+      const note = prompt(`请输入${actionText}理由：`);
+      
+      if (!note || note.trim() === '') {
+        alert('请填写审核备注');
+        return;
+      }
+      
+      if (!confirm(`确定要${actionText}此举报吗？`)) {
+        return;
+      }
+      
+      try {
+        const user_id = localStorage.getItem('user_id');
+        const res = await fetch('/api/admin/reports/review', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + user_id
+          },
+          body: JSON.stringify({
+            report_id: reportId,
+            action: action,
+            admin_note: note
+          })
+        });
+        
+        const result = await res.json();
+        
+        if (res.ok) {
+          alert(result.msg);
+          if (result.entered_blackroom) {
+            alert('⚠️ 该用户已达到5次举报，已自动进入小黑屋！');
+          }
+          loadPendingReports();
+        } else {
+          alert(result.msg || '操作失败');
+        }
+      } catch (error) {
+        console.error('审核举报失败', error);
+        alert('审核失败，请稍后重试');
+      }
+    }
 
-        <div class="pending-section">
-          <h3>待审核代拿 (${data.posts ? data.posts.length : 0})</h3>
-          ${data.posts && data.posts.length > 0 ? data.posts.map(p => `
-            <div class="pending-item">
-              <span>${p.title || ''} - ${p.pickup_location || ''} → ${p.deliver_location || ''}</span>
-              <button onclick="approve('post', ${p.post_id})" class="btn-approve">通过</button>
-            </div>
-          `).join('') : '<p>暂无</p>'}
-        </div>
-      `;
+    function updateStats(data) {
+        const uCount = data.users ? data.users.length : 0;
+        const vCount = data.vehicles ? data.vehicles.length : 0;
+        const pCount = data.posts ? data.posts.length : 0;
 
-      document.getElementById('pending-list').innerHTML = html || '<p>暂无待审核</p>';
+        document.getElementById('userCount').textContent = uCount;
+        document.getElementById('vehicleCount').textContent = vCount;
+        document.getElementById('postCount').textContent = pCount;
+
+        document.getElementById('tabUserCount').textContent = uCount;
+        document.getElementById('tabVehicleCount').textContent = vCount;
+        document.getElementById('tabPostCount').textContent = pCount;
+    }
+
+    function renderUsers(users) {
+        const tbody = document.getElementById('userTableBody');
+        const empty = document.getElementById('userEmpty');
+        tbody.innerHTML = '';
+
+        if (!users || users.length === 0) {
+            empty.classList.remove('d-none');
+            return;
+        }
+        empty.classList.add('d-none');
+
+        users.forEach(u => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><span class="text-muted">#${u.user_id}</span></td>
+                    <td class="fw-bold">${u.student_id}</td>
+                    <td>${u.name}</td>
+                    <td>${new Date(u.created_at || Date.now()).toLocaleDateString()}</td>
+                    <td>
+                        <button onclick="approve('user', ${u.user_id})" class="btn btn-sm btn-success rounded-pill px-3">
+                            <i class="bi bi-check-lg"></i> 通过
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderVehicles(vehicles) {
+        const tbody = document.getElementById('vehicleTableBody');
+        const empty = document.getElementById('vehicleEmpty');
+        tbody.innerHTML = '';
+
+        if (!vehicles || vehicles.length === 0) {
+            empty.classList.remove('d-none');
+            return;
+        }
+        empty.classList.add('d-none');
+
+        vehicles.forEach(v => {
+            const typeIcon = v.type === 'ebike' ? 'bi-lightning-charge' : 'bi-bicycle';
+            tbody.innerHTML += `
+                <tr>
+                    <td><i class="bi ${typeIcon} text-primary"></i> ${v.type === 'ebike' ? '电动车' : '自行车'}</td>
+                    <td>
+                        <div class="fw-bold">${v.plate_number || '无车牌'}</div>
+                        <small class="text-muted">${v.description || '无描述'}</small>
+                    </td>
+                    <td>${v.location_desc || '-'}</td>
+                    <td class="text-danger fw-bold">¥${v.price_per_hour}/h</td>
+                    <td>${v.owner_name || '未知'}</td>
+                    <td>
+                        <button onclick="approve('vehicle', ${v.vehicle_id})" class="btn btn-sm btn-success rounded-pill px-3">
+                            <i class="bi bi-check-lg"></i> 通过
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderPosts(posts) {
+        const tbody = document.getElementById('postTableBody');
+        const empty = document.getElementById('postEmpty');
+        tbody.innerHTML = '';
+
+        if (!posts || posts.length === 0) {
+            empty.classList.remove('d-none');
+            return;
+        }
+        empty.classList.add('d-none');
+
+        posts.forEach(p => {
+            let typeName = '其他';
+            if(p.type === 'daigou_express') typeName = '代拿快递';
+            else if(p.type === 'daigou_food') typeName = '代拿外卖';
+            else if(p.type === 'share') typeName = '求合租';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td><span class="badge bg-light text-dark border">${typeName}</span></td>
+                    <td>
+                        <div class="fw-bold text-truncate" style="max-width: 200px;">${p.title}</div>
+                        <small class="text-muted text-truncate" style="max-width: 200px; display:block;">${p.content || p.pickup_location}</small>
+                    </td>
+                    <td>${p.author_name || p.author_student_id}</td>
+                    <td class="text-success">${p.reward ? '¥'+p.reward : '-'}</td>
+                    <td>
+                        <button onclick="approve('post', ${p.post_id})" class="btn btn-sm btn-success rounded-pill px-3">
+                            <i class="bi bi-check-lg"></i> 通过
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
     }
 
     async function approve(type, id) {
-      const res = await fetch('/api/admin/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, id })
-      });
-      const data = await res.json();
-      alert(data.msg);
-      loadPending();
-    }
+        if(!confirm('确认通过审核吗？')) return;
 
-    loadPending();
+        try {
+            const res = await fetch('/api/admin/approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, id })
+            });
+            const data = await res.json();
+            
+            if(res.ok) {
+                // alert(data.msg); // 可选：关闭弹窗提示，直接刷新更流畅
+                loadPending(); // 刷新列表
+            } else {
+                alert(data.msg || '操作失败');
+            }
+        } catch(e) {
+            alert('网络错误');
+        }
+    }
   </script>
 </body>
 </html>

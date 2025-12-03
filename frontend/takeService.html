@@ -66,14 +66,14 @@
             if (userInfo.role === "user") {
                 menuElement.innerHTML = `
                     <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
-                    <li><a class="dropdown-item" href="/rent.html">车辆发布</a></li>
+                    <li><a class="dropdown-item" href="/vehicleManage.html">车辆管理</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
                 `;
             } else if (userInfo.role === "admin") {
                 menuElement.innerHTML = `
                     <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
-                    <li><a class="dropdown-item" href="/admin.html">管理员后台</a></li>
+                    <li><a class="dropdown-item" href="/admin.html">管理界面</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="#" id="logoutBtn">退出登录</a></li>
                 `;

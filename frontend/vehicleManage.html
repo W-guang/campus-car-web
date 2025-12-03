@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>车辆管理 - 校园车辆管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="assets/style.css">
+    <style>
+        /* 页面特有样式 */
+        .nav-tabs .nav-link {
+            color: #718096;
+            border: none;
+            padding: 12px 20px;
+            font-weight: 500;
+        }
+        .nav-tabs .nav-link.active {
+            color: #667eea;
+            background: transparent;
+            border-bottom: 3px solid #667eea;
+            font-weight: bold;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            border-top: 4px solid #667eea;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .stats-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #2d3748;
+            margin: 10px 0;
+        }
+        .stats-label {
+            color: #718096;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .vehicle-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+        .vehicle-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-idle { background: #e0f2fe; color: #0369a1; }
+        .status-listed { background: #dcfce7; color: #15803d; }
+        .status-rented { background: #fff7ed; color: #c2410c; }
+        .status-pending { background: #f1f5f9; color: #475569; }
+        .status-verified { background: #dcfce7; color: #15803d; }
+        .status-rejected { background: #fee2e2; color: #b91c1c; }
+    </style>
+</head>
+<body>
+    <div class="gradient-bg">
+        <div class="g-blob blob-1"></div>
+        <div class="g-blob blob-2"></div>
+        <div class="g-blob blob-3"></div>
+    </div>
+
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="/index.html">
+                <i class="bi bi-car-front-fill me-2"></i>校园车辆管理
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/index.html">首页</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/carRent.html">租车</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/forum.html">论坛</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/blacklist.html">黑名单</a></li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-bold text-primary" href="#" role="button" data-bs-toggle="dropdown">
+                            个人中心
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg" id="userMenu">
+                            <li><a class="dropdown-item" href="/login.html">请先登录</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div style="height: 80px;"></div>
+
+    <div class="container">
+        <div class="main-container">
+            <!-- 页面头部 -->
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                <h2 class="page-title mb-0">
+                    <i class="bi bi-grid-fill"></i>车辆管理中心
+                </h2>
+                <div>
+                    <a href="/rent.html" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>上架车辆
+                    </a>
+                    <a href="/personalInfo.html" class="btn btn-outline-secondary ms-2 border-0">
+                        返回个人中心
+                    </a>
+                </div>
+            </div>
+
+            <!-- 统计概览 -->
+            <div class="row mb-5 g-4">
+                <div class="col-md-3 col-6">
+                    <div class="stats-card">
+                        <div class="stats-label">总车辆数</div>
+                        <div class="stats-number" id="totalVehicles">-</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stats-card" style="border-top-color: #10b981;">
+                        <div class="stats-label">已上架</div>
+                        <div class="stats-number text-success" id="listedVehicles">-</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stats-card" style="border-top-color: #f59e0b;">
+                        <div class="stats-label">租用中</div>
+                        <div class="stats-number text-warning" id="rentedVehicles">-</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stats-card" style="border-top-color: #6366f1;">
+                        <div class="stats-label">总订单数</div>
+                        <div class="stats-number text-primary" id="totalOrders">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 标签页导航 -->
+            <ul class="nav nav-tabs mb-4" id="manageTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="vehicles-tab" data-bs-toggle="tab" data-bs-target="#vehicles" type="button" role="tab">
+                        <i class="bi bi-car-front me-2"></i>我的车辆
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">
+                        <i class="bi bi-receipt me-2"></i>订单管理
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                        <i class="bi bi-graph-up me-2"></i>数据统计
+                    </button>
+                </li>
+            </ul>
+
+            <!-- 标签页内容 -->
+            <div class="tab-content" id="manageTabContent">
+                <!-- 车辆管理标签页 -->
+                <div class="tab-pane fade show active" id="vehicles" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold text-secondary">车辆列表</h5>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" id="vehicleStatusFilter" style="width: auto;">
+                                <option value="">全部状态</option>
+                                <option value="idle">闲置</option>
+                                <option value="listed">已上架</option>
+                                <option value="rented">租用中</option>
+                            </select>
+                            <select class="form-select form-select-sm" id="vehicleVerifyFilter" style="width: auto;">
+                                <option value="">审核状态</option>
+                                <option value="0">待审核</option>
+                                <option value="1">已通过</option>
+                                <option value="2">已拒绝</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="vehiclesList">
+                        <div class="text-center py-5 text-muted">
+                            <div class="spinner-border text-primary mb-3" role="status"></div>
+                            <p>正在加载车辆数据...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 订单管理标签页 -->
+                <div class="tab-pane fade" id="orders" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold text-secondary">订单列表</h5>
+                        <select class="form-select form-select-sm w-auto" id="orderTypeFilter">
+                            <option value="owned">租我车的</option>
+                            <option value="rented">我租的车</option>
+                            <option value="history">历史订单</option>
+                        </select>
+                    </div>
+                    <div id="ordersList">
+                        <div class="text-center py-5 text-muted">
+                            <div class="spinner-border text-primary mb-3" role="status"></div>
+                            <p>正在加载订单...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据统计标签页 -->
+                <div class="tab-pane fade" id="analytics" role="tabpanel">
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="custom-card bg-light border-0 h-100">
+                                <h6 class="text-muted text-uppercase small fw-bold">本月预估收入</h6>
+                                <h2 class="text-success mb-0 mt-2" id="monthlyIncome">¥0.00</h2>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="custom-card bg-light border-0 h-100">
+                                <h6 class="text-muted text-uppercase small fw-bold">累计总收入</h6>
+                                <h2 class="text-primary mb-0 mt-2" id="totalIncome">¥0.00</h2>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mb-3 fw-bold text-secondary">车辆表现趋势</h5>
+                    <div id="vehiclePerformance" class="custom-card text-center py-5 text-muted bg-light">
+                        <i class="bi bi-bar-chart-line display-4 d-block mb-3 opacity-50"></i>
+                        <p>更多可视化图表即将上线...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Toast 工具类 (如果没有单独文件，这里简单实现一个) -->
+    <script>
+        const toast = {
+            success: (msg) => alert('成功: ' + msg),
+            error: (msg) => alert('错误: ' + msg),
+            info: (msg) => console.log(msg),
+            confirm: (msg) => confirm(msg),
+            hide: () => {}
+        };
+    </script>
+
+    <script>
+        // 全局变量
+        let allVehicles = [];
+        let allOrders = [];
+        const user_id = localStorage.getItem('user_id');
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            if (!user_id) {
+                alert('请先登录');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // 初始化用户菜单
+            initUserMenu();
+            
+            // 加载数据
+            loadVehicles();
+            loadOrders();
+
+            // 绑定筛选器事件
+            bindFilterEvents();
+        });
+
+        // 初始化用户菜单
+        function initUserMenu() {
+            const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+            const menuElement = document.getElementById("userMenu");
+            if (!userInfo) return;
+
+            menuElement.innerHTML = "";
+            if (userInfo.role === "user") {
+                menuElement.innerHTML = `
+                    <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+                    <li><a class="dropdown-item" href="/vehicleManage.html">车辆管理</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="logout()">退出登录</a></li>
+                `;
+            } else if (userInfo.role === "admin") {
+                menuElement.innerHTML = `
+                    <li><a class="dropdown-item" href="/personalInfo.html">个人信息</a></li>
+                    <li><a class="dropdown-item" href="/admin.html">管理界面</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="logout()">退出登录</a></li>
+                `;
+            }
+        }
+
+        // 加载车辆数据
+        async function loadVehicles() {
+            try {
+                const res = await fetch('/api/vehicles/my', {
+                    headers: {
+                        'Authorization': 'Bearer ' + user_id
+                    }
+                });
+
+                if (res.ok) {
+                    allVehicles = await res.json();
+                    renderVehicles();
+                    updateStats();
+                } else {
+                    throw new Error('加载失败');
+                }
+            } catch (error) {
+                console.error('加载车辆失败', error);
+                document.getElementById('vehiclesList').innerHTML = 
+                    '<div class="text-center py-5 text-muted"><i class="bi bi-exclamation-circle display-4"></i><p class="mt-3">加载失败</p></div>';
+            }
+        }
+
+        // 渲染车辆列表
+        function renderVehicles() {
+            const container = document.getElementById('vehiclesList');
+            const statusFilter = document.getElementById('vehicleStatusFilter').value;
+            const verifyFilter = document.getElementById('vehicleVerifyFilter').value;
+
+            let filteredVehicles = allVehicles;
+
+            // 应用筛选器
+            if (statusFilter) {
+                filteredVehicles = filteredVehicles.filter(v => v.status === statusFilter);
+            }
+            if (verifyFilter !== '') {
+                filteredVehicles = filteredVehicles.filter(v => v.is_verified == verifyFilter);
+            }
+
+            if (filteredVehicles.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5 text-muted bg-light rounded-4">
+                        <i class="bi bi-car-front display-4 d-block mb-3 opacity-50"></i>
+                        <p>暂无符合条件的车辆</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredVehicles.map(vehicle => renderVehicleCard(vehicle)).join('');
+        }
+
+        // 渲染车辆卡片
+        function renderVehicleCard(vehicle) {
+            const verifyStatusMap = {
+                0: { text: '待审核', class: 'status-pending' },
+                1: { text: '已通过', class: 'status-verified' },
+                2: { text: '已拒绝', class: 'status-rejected' }
+            };
+
+            const vehicleStatusMap = {
+                'idle': { text: '闲置', class: 'status-idle' },
+                'listed': { text: '已上架', class: 'status-listed' },
+                'rented': { text: '租用中', class: 'status-rented' }
+            };
+
+            const verifyStatus = verifyStatusMap[vehicle.is_verified] || verifyStatusMap[0];
+            const vehicleStatus = vehicleStatusMap[vehicle.status] || vehicleStatusMap['idle'];
+            const vehicleType = vehicle.type === 'ebike' ? '电动车' : '自行车';
+            const plateNumber = vehicle.plate_number || '未设置';
+
+            // 根据状态显示操作按钮
+            let actionButtons = '';
+            if (vehicle.is_verified === 1) {
+                if (vehicle.status === 'idle') {
+                    actionButtons = `
+                        <a href="/rent.html" class="btn btn-success btn-sm rounded-pill px-3">
+                            <i class="bi bi-upload me-1"></i>上架
+                        </a>
+                    `;
+                } else if (vehicle.status === 'listed') {
+                    actionButtons = `
+                        <button class="btn btn-warning btn-sm rounded-pill px-3 text-white" onclick="unlistVehicle(${vehicle.vehicle_id})">
+                            <i class="bi bi-download me-1"></i>下架
+                        </button>
+                    `;
+                } else if (vehicle.status === 'rented') {
+                    actionButtons = `
+                        <button class="btn btn-secondary btn-sm rounded-pill px-3" disabled>
+                            <i class="bi bi-hourglass-split me-1"></i>租用中
+                        </button>
+                    `;
+                }
+            }
+
+            return `
+                <div class="vehicle-card">
+                    <div class="d-flex justify-content-between align-items-start mb-3 border-bottom pb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1">${plateNumber}</h5>
+                            <div class="text-muted small">
+                                <i class="bi ${vehicle.type === 'ebike' ? 'bi-lightning-charge' : 'bi-bicycle'} me-1"></i>
+                                ${vehicleType}
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <span class="status-badge ${verifyStatus.class}">${verifyStatus.text}</span>
+                            <span class="status-badge ${vehicleStatus.class}">${vehicleStatus.text}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">车辆描述</small>
+                            <p class="mb-0 text-truncate">${vehicle.description || '暂无描述'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            ${vehicle.location_desc ? `
+                                <small class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">停放位置</small>
+                                <p class="mb-0 text-truncate"><i class="bi bi-geo-alt text-primary me-1"></i>${vehicle.location_desc}</p>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <div>
+                            ${vehicle.price_per_hour ? `<span class="fw-bold text-primary fs-5">¥${vehicle.price_per_hour}</span><small class="text-muted">/小时</small>` : ''}
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <small class="text-muted me-2 d-none d-md-inline">注册于 ${new Date(vehicle.created_at).toLocaleDateString()}</small>
+                            ${actionButtons}
+                            <button class="btn btn-light btn-sm rounded-pill px-3" onclick="viewVehicleDetails(${vehicle.vehicle_id})">
+                                详情
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 下架车辆
+        async function unlistVehicle(vehicleId) {
+            const vehicle = allVehicles.find(v => v.vehicle_id === vehicleId);
+            if (!vehicle) return;
+
+            const confirmed = await toast.confirm(
+                `下架后其他用户将无法租用此车辆，确定要下架车辆 ${vehicle.plate_number} 吗？`,
+                '确认下架车辆'
+            );
+            
+            if (!confirmed) return;
+
+            // 显示加载状态
+            const loadingToast = toast.info('正在下架车辆...', '处理中', 0);
+
+            try {
+                const res = await fetch(`/api/vehicles/${vehicleId}/unlist`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + user_id
+                    }
+                });
+
+                const result = await res.json();
+                toast.hide(loadingToast);
+                
+                if (res.ok) {
+                    toast.success('车辆已成功下架，现在处于闲置状态');
+                    loadVehicles(); // 重新加载
+                } else {
+                    toast.error(result.msg || '下架失败，请稍后重试');
+                }
+            } catch (error) {
+                toast.hide(loadingToast);
+                toast.error('网络错误，请检查网络连接后重试');
+                console.error('下架失败', error);
+            }
+        }
+
+        // 查看车辆详情
+        function viewVehicleDetails(vehicleId) {
+            const vehicle = allVehicles.find(v => v.vehicle_id === vehicleId);
+            if (!vehicle) return;
+
+            const details = `车辆详情：
+车牌号：${vehicle.plate_number || '未设置'}
+类型：${vehicle.type === 'ebike' ? '电动车' : '自行车'}
+状态：${vehicle.status}
+审核状态：${vehicle.is_verified === 1 ? '已通过' : vehicle.is_verified === 2 ? '已拒绝' : '待审核'}
+描述：${vehicle.description || '无'}
+${vehicle.location_desc ? '位置：' + vehicle.location_desc : ''}
+${vehicle.price_per_hour ? '租金：¥' + vehicle.price_per_hour + '/小时' : ''}`;
+
+            alert(details);
+        }
+
+        // 加载订单数据
+        async function loadOrders() {
+            try {
+                const res = await fetch('/api/orders/my?type=owned', {
+                    headers: {
+                        'Authorization': 'Bearer ' + user_id
+                    }
+                });
+
+                if (res.ok) {
+                    allOrders = await res.json();
+                    renderOrders();
+                    updateStats();
+                } else {
+                    throw new Error('加载失败');
+                }
+            } catch (error) {
+                console.error('加载订单失败', error);
+                document.getElementById('ordersList').innerHTML = 
+                    '<div class="text-center py-5 text-muted"><i class="bi bi-exclamation-circle display-4"></i><p class="mt-3">加载失败</p></div>';
+            }
+        }
+
+        // 渲染订单列表
+        function renderOrders() {
+            const container = document.getElementById('ordersList');
+
+            if (allOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5 text-muted bg-light rounded-4">
+                        <i class="bi bi-receipt display-4 d-block mb-3 opacity-50"></i>
+                        <p>暂无订单数据</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = allOrders.map(order => `
+                <div class="vehicle-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold">订单 #${order.order_id}</h6>
+                            <div class="text-muted small">
+                                <span class="me-3"><i class="bi bi-car-front me-1"></i>${order.vehicle_type || '未知'}</span>
+                                <span class="me-3"><i class="bi bi-clock me-1"></i>${order.hours}小时</span>
+                                <span class="text-primary fw-bold">¥${order.total_fee}</span>
+                            </div>
+                            <small class="text-muted mt-1 d-block">创建时间：${new Date(order.created_at).toLocaleString()}</small>
+                        </div>
+                        <div>
+                            <span class="status-badge ${getOrderStatusClass(order.status)}">${getOrderStatusText(order.status)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 获取订单状态样式
+        function getOrderStatusClass(status) {
+            const statusMap = {
+                'pending': 'status-pending',
+                'confirmed': 'status-listed',
+                'completed': 'status-verified',
+                'cancelled': 'status-rejected'
+            };
+            return statusMap[status] || 'status-pending';
+        }
+
+        // 获取订单状态文本
+        function getOrderStatusText(status) {
+            const statusMap = {
+                'pending': '待确认',
+                'confirmed': '已确认',
+                'completed': '已完成',
+                'cancelled': '已取消'
+            };
+            return statusMap[status] || '未知';
+        }
+
+        // 更新统计数据
+        function updateStats() {
+            const totalVehicles = allVehicles.length;
+            const listedVehicles = allVehicles.filter(v => v.status === 'listed').length;
+            const rentedVehicles = allVehicles.filter(v => v.status === 'rented').length;
+            const totalOrders = allOrders.length;
+
+            document.getElementById('totalVehicles').textContent = totalVehicles;
+            document.getElementById('listedVehicles').textContent = listedVehicles;
+            document.getElementById('rentedVehicles').textContent = rentedVehicles;
+            document.getElementById('totalOrders').textContent = totalOrders;
+
+            // 计算收入
+            const totalIncome = allOrders
+                .filter(o => o.status === 'completed')
+                .reduce((sum, o) => sum + parseFloat(o.total_fee || 0), 0);
+            
+            document.getElementById('totalIncome').textContent = `¥${totalIncome.toFixed(2)}`;
+            document.getElementById('monthlyIncome').textContent = `¥${(totalIncome * 0.3).toFixed(2)}`; // 假设本月30%
+        }
+
+        // 绑定筛选器事件
+        function bindFilterEvents() {
+            document.getElementById('vehicleStatusFilter').addEventListener('change', renderVehicles);
+            document.getElementById('vehicleVerifyFilter').addEventListener('change', renderVehicles);
+            document.getElementById('orderTypeFilter').addEventListener('change', function() {
+                // 重新加载对应类型的订单
+                loadOrders();
+            });
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('user_id');
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>
